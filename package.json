@@ -4,6 +4,7 @@
 	"type": "module",
 	"private": true,
 	"scripts": {
+		"dev": "bun run src/main.ts",
 		"check": "biome check . && tsc --noEmit",
 		"fix": "biome check --write ."
 	},
