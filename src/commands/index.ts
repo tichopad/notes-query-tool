@@ -1,5 +1,7 @@
 import { defineCommand } from "citty";
-import { loadFiles } from "../load-files";
+import { db } from "../database/client";
+import { notesTable } from "../database/schema/notes";
+import { loadFilesByGlob } from "../files/load-files";
 
 export const indexCommand = defineCommand({
 	meta: {
@@ -13,15 +15,13 @@ export const indexCommand = defineCommand({
 			required: true,
 		},
 	},
-	setup({ args }) {
-		console.log(`now setup ${args.globPattern}`);
-	},
-	cleanup({ args }) {
-		console.log(`now cleanup ${args.globPattern}`);
-	},
 	async run({ args }) {
-		for await (const file of loadFiles(args.globPattern)) {
+		for await (const file of loadFilesByGlob(args.globPattern)) {
 			console.log(file);
 		}
+		const x = await db
+			.select({ filePath: notesTable.filePath })
+			.from(notesTable);
+		console.log(x);
 	},
 });

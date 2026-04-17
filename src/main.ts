@@ -1,5 +1,6 @@
 import { defineCommand, runMain } from "citty";
 import { indexCommand } from "./commands";
+import { db } from "./database/client";
 
 const main = defineCommand({
 	meta: {
@@ -10,6 +11,9 @@ const main = defineCommand({
 	subCommands: {
 		index: indexCommand,
 	},
+	async cleanup() {
+		await db.$client.close();
+	},
 });
 
-runMain(main);
+await runMain(main);

@@ -11,6 +11,10 @@ Always default to using Bun instead of Node.js.
 - Use `bunx <package> <command>` instead of `npx <package> <command>`
 - Bun automatically loads .env, so don't use dotenv.
 
+## Test data dirs
+
+- Avoid reading testdata/ and dbdata/ directories' contents unless it's required to finish the task
+
 ## Version control
 
 - Use conventional commits
