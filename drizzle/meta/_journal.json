@@ -15,6 +15,20 @@
 			"when": 1776198831449,
 			"tag": "0001_faulty_snowbird",
 			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "7",
+			"when": 1776524021780,
+			"tag": "0002_sudden_power_man",
+			"breakpoints": true
+		},
+		{
+			"idx": 3,
+			"version": "7",
+			"when": 1776524733899,
+			"tag": "0003_round_wind_dancer",
+			"breakpoints": true
 		}
 	]
 }
