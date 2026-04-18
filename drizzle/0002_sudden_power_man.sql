@@ -1,4 +1,4 @@
-CREATE TABLE "chunks" (
+CREATE TABLE IF NOT EXISTS "chunks" (
 	"id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "chunks_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START WITH 1 CACHE 1),
 	"file_id" integer NOT NULL,
 	"chunk_index" integer NOT NULL,
@@ -9,7 +9,7 @@ CREATE TABLE "chunks" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "files" (
+CREATE TABLE IF NOT EXISTS "files" (
 	"id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "files_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START WITH 1 CACHE 1),
 	"file_path" text NOT NULL,
 	"content_hash" text NOT NULL,
@@ -18,5 +18,8 @@ CREATE TABLE "files" (
 	CONSTRAINT "files_file_path_unique" UNIQUE("file_path")
 );
 --> statement-breakpoint
-DROP TABLE "notes" CASCADE;--> statement-breakpoint
-ALTER TABLE "chunks" ADD CONSTRAINT "chunks_file_id_files_id_fk" FOREIGN KEY ("file_id") REFERENCES "public"."files"("id") ON DELETE cascade ON UPDATE no action;
+DROP TABLE IF EXISTS "notes" CASCADE;--> statement-breakpoint
+DO $$ BEGIN
+  ALTER TABLE "chunks" ADD CONSTRAINT "chunks_file_id_files_id_fk" FOREIGN KEY ("file_id") REFERENCES "public"."files"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
