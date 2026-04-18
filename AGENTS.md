@@ -38,6 +38,11 @@ test("hello world", () => {
 });
 ```
 
+## Database
+
+- Use PGLite via Drizzle
+- In case of issues with a stale lock (e.g. process didn't close correctly), run `bun db:delete-stale-lock`
+
 ## Changes verification
 
 Run `bun run fix && bun run check` after changes to verify them.

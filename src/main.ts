@@ -17,3 +17,8 @@ const main = defineCommand({
 });
 
 await runMain(main);
+
+process.on("unhandledRejection", (reason) => {
+	console.error("Unhandled Rejection:", reason);
+	db.$client.close().finally(() => process.exit(1));
+});
