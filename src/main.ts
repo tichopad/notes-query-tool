@@ -1,5 +1,5 @@
 import { defineCommand, runMain } from "citty";
-import { indexCommand } from "./commands";
+import { loadCommand } from "./commands/load";
 import { db } from "./database/client";
 
 const main = defineCommand({
@@ -9,7 +9,7 @@ const main = defineCommand({
 		description: "Notes query tool (think of a better description later)",
 	},
 	subCommands: {
-		index: indexCommand,
+		load: loadCommand,
 	},
 	async cleanup() {
 		await db.$client.close();
