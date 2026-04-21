@@ -1,12 +1,9 @@
-import {
-	type FeatureExtractionPipeline,
-	pipeline,
-} from "@huggingface/transformers";
 import { defineCommand } from "citty";
 import { eq, sql } from "drizzle-orm";
 import { db } from "../database/client";
 import { chunksTable, type NewChunk } from "../database/schema/chunks";
 import { filesTable } from "../database/schema/files";
+import { initEmbedder } from "../embedder";
 import { chunkMarkdown } from "../files/chunker";
 import { extractFrontmatter } from "../files/frontmatter";
 import { loadFilesByGlob } from "../files/load-files";
@@ -16,24 +13,6 @@ import { loadFilesByGlob } from "../files/load-files";
 // Smaller chunks avoid GPU device-lost crashes on integrated GPUs (iGPU).
 // CPU fallback in getEmbedding() catches any remaining edge cases.
 const CHUNK_CHAR_LIMIT = 4000;
-
-const MODEL_ID = "onnx-community/Qwen3-Embedding-0.6B-ONNX";
-const MODEL_DTYPE = "q4f16";
-
-async function createEmbedder(device: "webgpu" | "cpu") {
-	return await pipeline("feature-extraction", MODEL_ID, {
-		device,
-		dtype: MODEL_DTYPE,
-	});
-}
-
-function extractVector(data: ArrayLike<number>): number[] {
-	const vector = Array.from(data);
-	if (vector.some((v) => !Number.isFinite(v))) {
-		return [];
-	}
-	return vector;
-}
 
 export const loadCommand = defineCommand({
 	meta: {
@@ -51,39 +30,7 @@ export const loadCommand = defineCommand({
 		let fileCount = 0;
 		let chunkCount = 0;
 
-		let embed: FeatureExtractionPipeline;
-		let device: "webgpu" | "cpu" = "webgpu";
-
-		try {
-			embed = await createEmbedder("webgpu");
-		} catch {
-			console.warn("WebGPU unavailable, using CPU.");
-			device = "cpu";
-			embed = await createEmbedder("cpu");
-		}
-
-		async function getEmbedding(text: string): Promise<number[]> {
-			const result = await embed(text, {
-				pooling: "mean",
-				normalize: true,
-			});
-			const vector = extractVector(result.data as Float32Array);
-			if (vector.length > 0) {
-				return vector;
-			}
-
-			// WebGPU produced NaN (GPU device lost). Fall back to CPU.
-			if (device === "webgpu") {
-				console.warn(
-					"WebGPU produced invalid embeddings, falling back to CPU...",
-				);
-				device = "cpu";
-				embed = await createEmbedder("cpu");
-				return getEmbedding(text);
-			}
-
-			throw new Error("Embedding model produced non-finite values");
-		}
+		const getEmbedding = await initEmbedder();
 
 		for await (const filePath of loadFilesByGlob(args.glob)) {
 			const content = await Bun.file(filePath).text();

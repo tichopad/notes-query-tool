@@ -1,5 +1,6 @@
 import { defineCommand, runMain } from "citty";
 import { loadCommand } from "./commands/load";
+import { queryCommand } from "./commands/query";
 import { db } from "./database/client";
 
 const main = defineCommand({
@@ -10,6 +11,7 @@ const main = defineCommand({
 	},
 	subCommands: {
 		load: loadCommand,
+		query: queryCommand,
 	},
 	async cleanup() {
 		await db.$client.close();

@@ -10,7 +10,7 @@
 		"db:push": "drizzle-kit push",
 		"db:studio": "drizzle-kit studio",
 		"dev": "bun run src/main.ts",
-		"check": "biome check . && tsc --noEmit && bun run test",
+		"check": "biome check . && tsc --noEmit && bun test",
 		"fix": "biome check --write ."
 	},
 	"dependencies": {
