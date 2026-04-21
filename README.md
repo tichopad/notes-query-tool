@@ -1,15 +1,7 @@
 # notes-query-tool
 
-To install dependencies:
+Load and index notes:
+`bun dev load --glob "testdata/**/*.md"`
 
-```bash
-bun install
-```
-
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.3.9. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+Query notes:
+`bun dev query "Who's my girlfriend?"`
