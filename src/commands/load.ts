@@ -1,18 +1,8 @@
 import { defineCommand } from "citty";
-import { eq, sql } from "drizzle-orm";
-import { db } from "../database/client";
-import { chunksTable, type NewChunk } from "../database/schema/chunks";
-import { filesTable } from "../database/schema/files";
-import { initEmbedder } from "../embedder";
 import { chunkMarkdown } from "../files/chunker";
-import { extractFrontmatter } from "../files/frontmatter";
 import { loadFilesByGlob } from "../files/load-files";
-
-// Qwen3-Embedding-0.6B: 32k token context.
-// ~4 chars/token → ~1000 tokens per chunk, well within context window.
-// Smaller chunks avoid GPU device-lost crashes on integrated GPUs (iGPU).
-// CPU fallback in getEmbedding() catches any remaining edge cases.
-const CHUNK_CHAR_LIMIT = 4000;
+import { DbLoadRepository } from "./load/load-repository";
+import { processLoadedFile } from "./load/process-file";
 
 export const loadCommand = defineCommand({
 	meta: {
@@ -27,73 +17,45 @@ export const loadCommand = defineCommand({
 		},
 	},
 	async run({ args }) {
-		let fileCount = 0;
-		let chunkCount = 0;
+		let filesSeen = 0;
+		let filesSkipped = 0;
+		let filesProcessed = 0;
+		let chunksProduced = 0;
 
-		const getEmbedding = await initEmbedder();
+		const repo = new DbLoadRepository();
+
+		let embedFn: ((text: string) => Promise<number[]>) | null = null;
+		const getEmbed = async (text: string): Promise<number[]> => {
+			if (!embedFn) {
+				const { initEmbedder } = await import("../embedder");
+				embedFn = await initEmbedder();
+			}
+			return embedFn(text);
+		};
 
 		for await (const filePath of loadFilesByGlob(args.glob)) {
-			const content = await Bun.file(filePath).text();
-			const { attributes, body } = extractFrontmatter(content);
-			const contentHash = new Bun.CryptoHasher("sha256")
-				.update(content)
-				.digest("hex");
-			const chunks = chunkMarkdown(body, CHUNK_CHAR_LIMIT);
+			filesSeen++;
 
-			// Sort chunks by startOffset to determine chunk_index
-			const sorted = chunks
-				.map((c, i) => ({ ...c, originalIndex: i }))
-				.sort((a, b) => a.startOffset - b.startOffset);
-
-			await db.transaction(async (tx) => {
-				const [file] = await tx
-					.insert(filesTable)
-					.values({ filePath, contentHash, attributes })
-					.onConflictDoUpdate({
-						target: filesTable.filePath,
-						set: {
-							contentHash,
-							attributes,
-							updatedAt: sql`now()`,
-						},
-					})
-					.returning({ id: filesTable.id });
-
-				if (!file) {
-					throw new Error(`Failed to upsert file: ${filePath}`);
-				}
-
-				// Delete old chunks before re-inserting
-				await tx.delete(chunksTable).where(eq(chunksTable.fileId, file.id));
-
-				if (sorted.length > 0) {
-					const newChunks: NewChunk[] = [];
-
-					for (const chunk of sorted) {
-						const breadcrumb = chunk.breadcrumb
-							.map((b) => b.replaceAll("#", "").trim())
-							.join(">");
-						const prefix = `${filePath}:${breadcrumb.length > 0 ? `${breadcrumb}:` : ""}`;
-						const embedding = await getEmbedding(prefix + chunk.text);
-						const newChunk: NewChunk = {
-							fileId: file.id,
-							chunkIndex: chunk.originalIndex,
-							content: chunk.text,
-							breadcrumbs: chunk.breadcrumb,
-							embedding,
-						};
-						newChunks.push(newChunk);
-					}
-
-					await tx.insert(chunksTable).values(newChunks);
-				}
+			const result = await processLoadedFile(filePath, {
+				repo,
+				readText: (p) => Bun.file(p).text(),
+				hashContent: (content) =>
+					new Bun.CryptoHasher("sha256").update(content).digest("hex"),
+				chunkMarkdown,
+				embed: getEmbed,
+				log: console.log,
 			});
 
-			fileCount++;
-			chunkCount += sorted.length;
-			console.log(`${filePath} → ${sorted.length} chunks`);
+			if (result.status === "skipped") {
+				filesSkipped++;
+			} else {
+				filesProcessed++;
+				chunksProduced += result.chunkCount;
+			}
 		}
 
-		console.log(`Done. ${fileCount} files, ${chunkCount} chunks total.`);
+		console.log(
+			`Done. ${filesSeen} files seen, ${filesProcessed} processed, ${filesSkipped} skipped, ${chunksProduced} chunks total.`,
+		);
 	},
 });
