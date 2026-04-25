@@ -73,7 +73,7 @@ Register the `pg_trgm` PGlite contrib extension in the client and add a Drizzle 
 
 ---
 
-## Phase 2: Trigram query channel and three-way fusion ⏳
+## Phase 2: Trigram query channel and three-way fusion ✅
 
 ### Overview
 
@@ -157,7 +157,7 @@ Add the third parallel query in `src/commands/query.ts` using `strict_word_simil
 
 ### Verification
 
-- [ ] `bun run fix && bun run check` passes.
+- [x] `bun run fix && bun run check` passes.
 - [ ] `bun run dev query --vs "Who is Rob Pinna?" --fts "Rob Pinna"` returns `testdata/People/Rob Pinna.md` in the top 10 with `--trigram-mode strict` (default).
 - [ ] Repeat with `--trigram-mode word`; verify it also returns results without errors and produces a different ordering on at least one query (confirms the flag wires through).
 - [ ] Inspect `query_results.yaml`: every result row has a numeric `score`, top-ranked items make sense for the query.
