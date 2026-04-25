@@ -2,13 +2,16 @@ diff --git a/bin.cjs b/bin.cjs
 index 07274ea6f53fd54a129b3d338892feda6e995cff..c7ddb7f1a2168e5932f141c951bd9aafb42baef0 100755
 --- a/bin.cjs
 +++ b/bin.cjs
-@@ -78827,7 +78827,8 @@ var init_connections = __esm({
-           const { PGlite, types: types3 } = await import("@electric-sql/pglite");
-           const { drizzle } = await import("drizzle-orm/pglite");
-           const { migrate: migrate2 } = await import("drizzle-orm/pglite/migrator");
+@@ -78827,7 +78827,11 @@ var init_connections = __esm({
+            const { PGlite, types: types3 } = await import("@electric-sql/pglite");
+            const { drizzle } = await import("drizzle-orm/pglite");
+            const { migrate: migrate2 } = await import("drizzle-orm/pglite/migrator");
 -          const pglite = "client" in credentials2 ? credentials2.client : new PGlite(normalisePGliteUrl(credentials2.url));
 +          const { vector } = await import('@electric-sql/pglite/vector');
-+          const pglite = "client" in credentials2 ? credentials2.client : new PGlite(normalisePGliteUrl(credentials2.url), { extensions: { vector } });
-           await pglite.waitReady;
-           const drzl = drizzle(pglite);
-           const migrateFn = async (config) => {
++          const { unaccent } = await import('@electric-sql/pglite/contrib/unaccent');
++          const pglite = "client" in credentials2 ? credentials2.client : new PGlite(normalisePGliteUrl(credentials2.url), { extensions: { vector, unaccent } });
+            await pglite.waitReady;
++          await pglite.exec('CREATE EXTENSION IF NOT EXISTS vector;');
++          await pglite.exec('CREATE EXTENSION IF NOT EXISTS unaccent;');
+            const drzl = drizzle(pglite);
+            const migrateFn = async (config) => {

@@ -18,6 +18,8 @@ export const loadCommand = defineCommand({
 		},
 	},
 	async run({ args }) {
+		const start = performance.now();
+
 		let filesSeen = 0;
 		let filesSkipped = 0;
 		let filesProcessed = 0;
@@ -66,6 +68,9 @@ export const loadCommand = defineCommand({
 
 		console.log(
 			`Done. ${filesSeen} files seen, ${filesProcessed} processed, ${filesSkipped} skipped, ${chunksProduced} chunks total.`,
+		);
+		console.log(
+			`Time taken: ${((performance.now() - start) / 1000).toFixed(2)}s`,
 		);
 	},
 });
