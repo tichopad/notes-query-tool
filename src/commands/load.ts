@@ -1,5 +1,6 @@
 import { defineCommand } from "citty";
 import pLimit from "p-limit";
+import { initEmbedder } from "../embedder";
 import { chunkMarkdown } from "../files/chunker";
 import { loadFilesByGlob } from "../files/load-files";
 import { DbLoadRepository } from "./load/load-repository";
@@ -30,7 +31,6 @@ export const loadCommand = defineCommand({
 		let embedFn: ((text: string) => Promise<number[]>) | null = null;
 		const getEmbed = async (text: string): Promise<number[]> => {
 			if (!embedFn) {
-				const { initEmbedder } = await import("../embedder");
 				embedFn = await initEmbedder();
 			}
 			return embedFn(text);
