@@ -8,6 +8,28 @@ Query notes:
 
 Both flags are required.
 
+An optional `--trigram-mode` / `-tg` flag selects the trigram operator: `strict` (default, uses `strict_word_similarity`) or `word` (uses `word_similarity`).
+
+## Search channels
+
+Three parallel channels run on every query and are fused by weighted score (vector 0.3 / FTS 0.4 / trigram 0.3):
+
+- **Vector** — dense cosine similarity on chunk embeddings. Best for semantic / paraphrase queries.
+- **FTS** — PostgreSQL full-text search via `tsvector`/`websearch_to_tsquery`. Best for keyword matching.
+- **Trigram** *(experimental)* — `pg_trgm` word-distance matching on raw chunk content via `strict_word_similarity` (default) or `word_similarity`. Best for proper-noun and lexical queries that FTS tokenisation misses.
+
+The trigram threshold is fixed at 0.3. Use `--trigram-mode strict` for precision (fewer but higher-confidence matches) or `--trigram-mode word` for recall (more matches, looser).
+
+### Re-loading notes after a fresh database
+
+If you need to reset the database (e.g. after schema migrations), run:
+
+```bash
+rm -rf dbdata/
+bun run db:migrate
+bun dev load --glob 'notes/**/*.md'
+```
+
 ## Examples
 
 ```sh

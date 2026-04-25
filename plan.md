@@ -167,7 +167,7 @@ Add the third parallel query in `src/commands/query.ts` using `strict_word_simil
 
 ---
 
-## Phase 3: Documentation and rollout ⏳
+## Phase 3: Documentation and rollout ✅
 
 ### Overview
 
@@ -189,7 +189,7 @@ Document the new flag, the trigram-mode trade-offs, and the manual reset/re-load
 
 ### Verification
 
-- [ ] `bun run fix && bun run check` passes.
+- [x] `bun run fix && bun run check` passes.
 - [ ] **Manual**: re-read the documentation block; the `rm -rf dbdata/` step is unambiguous and the trigram-mode comparison is explained in 1–2 sentences.
 
 ---
