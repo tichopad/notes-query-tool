@@ -97,13 +97,17 @@ export class DbLoadRepository implements LoadRepository {
 			await tx.delete(chunksTable).where(eq(chunksTable.fileId, fileId));
 
 			if (chunks.length > 0) {
-				const newChunks: NewChunk[] = chunks.map((chunk) => ({
-					fileId,
-					chunkIndex: chunk.chunkIndex,
-					content: chunk.content,
-					breadcrumbs: [],
-					embedding: chunk.embedding,
-				}));
+				const newChunks = chunks.map(
+					(chunk) =>
+						({
+							fileId,
+							chunkIndex: chunk.chunkIndex,
+							content: chunk.content,
+							breadcrumbs: [] as string[],
+							embedding: chunk.embedding,
+							fts: sql`to_tsvector('simple', unaccent(${chunk.content}))` as unknown as string,
+						}) satisfies NewChunk,
+				);
 
 				await tx.insert(chunksTable).values(newChunks);
 			}

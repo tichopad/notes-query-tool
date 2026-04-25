@@ -108,10 +108,10 @@ test("new file (state=null) → chunks, embeds, upserts, replaces with correct p
 
 	expect(result).toEqual({ status: "processed", chunkCount: 2 });
 
-	// chunkMarkdown called once with content + size 4000
+	// chunkMarkdown called once with content + size 2000
 	expect(tracked.chunkMarkdownCalls).toHaveLength(1);
 	expect(tracked.chunkMarkdownCalls[0]?.content).toBe(FAKE_CONTENT);
-	expect(tracked.chunkMarkdownCalls[0]?.args).toEqual([4000]);
+	expect(tracked.chunkMarkdownCalls[0]?.args).toEqual([2000]);
 
 	// upsertFile called once with the right args
 	expect(tracked.upsertFileCalls).toHaveLength(1);

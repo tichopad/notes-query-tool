@@ -3,9 +3,10 @@ import {
 	pipeline,
 } from "@huggingface/transformers";
 
-export const MODEL_ID = "onnx-community/Qwen3-Embedding-0.6B-ONNX";
-export const MODEL_DTYPE = "q4f16";
-export const EMBEDDING_DIMS = 1024;
+// export const MODEL_ID = "onnx-community/Qwen3-Embedding-0.6B-ONNX";
+export const MODEL_ID = "onnx-community/embeddinggemma-300m-ONNX";
+export const MODEL_DTYPE = "fp32";
+export const EMBEDDING_DIMS = 768;
 
 /**
  * Loads the feature-extraction pipeline on the given device.

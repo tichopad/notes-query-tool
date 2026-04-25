@@ -13,6 +13,9 @@ const main = defineCommand({
 		load: loadCommand,
 		query: queryCommand,
 	},
+	async setup() {
+		await db.$client.waitReady;
+	},
 	async cleanup() {
 		await db.$client.close();
 	},

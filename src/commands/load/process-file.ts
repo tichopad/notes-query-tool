@@ -7,6 +7,8 @@ export type FileLoadResult = {
 	chunkCount: number;
 };
 
+const CHUNK_LIMIT_CHARS = 2000;
+
 export type LoadRepositoryLike = {
 	getFileProcessingState(filePath: string): Promise<FileProcessingState>;
 	upsertFile(
@@ -47,7 +49,7 @@ export async function processLoadedFile(
 		return { status: "skipped", chunkCount: 0 };
 	}
 
-	const chunks = chunkMarkdown(content, 4000);
+	const chunks = chunkMarkdown(content, CHUNK_LIMIT_CHARS);
 
 	const { id: fileId } = await repo.upsertFile(
 		filePath,

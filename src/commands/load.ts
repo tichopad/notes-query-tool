@@ -1,4 +1,5 @@
 import { defineCommand } from "citty";
+import pLimit from "p-limit";
 import { chunkMarkdown } from "../files/chunker";
 import { loadFilesByGlob } from "../files/load-files";
 import { DbLoadRepository } from "./load/load-repository";
@@ -33,19 +34,28 @@ export const loadCommand = defineCommand({
 			return embedFn(text);
 		};
 
-		for await (const filePath of loadFilesByGlob(args.glob)) {
-			filesSeen++;
+		const limit = pLimit(10);
 
-			const result = await processLoadedFile(filePath, {
-				repo,
-				readText: (p) => Bun.file(p).text(),
-				hashContent: (content) =>
-					new Bun.CryptoHasher("sha256").update(content).digest("hex"),
-				chunkMarkdown,
-				embed: getEmbed,
-				log: console.log,
-			});
+		const filePaths = await Array.fromAsync(loadFilesByGlob(args.glob));
+		filesSeen = filePaths.length;
 
+		const results = await Promise.all(
+			filePaths.map((filePath) =>
+				limit(() =>
+					processLoadedFile(filePath, {
+						repo,
+						readText: (p) => Bun.file(p).text(),
+						hashContent: (content) =>
+							new Bun.CryptoHasher("sha256").update(content).digest("hex"),
+						chunkMarkdown,
+						embed: getEmbed,
+						log: console.log,
+					}),
+				),
+			),
+		);
+
+		for (const result of results) {
 			if (result.status === "skipped") {
 				filesSkipped++;
 			} else {
