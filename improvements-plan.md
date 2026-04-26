@@ -22,6 +22,8 @@ Query "Who is Rob Pinna?" never returns `testdata/People/Rob Pinna.md` in top 10
 ### B. Hybrid lexical + dense retrieval (proper fix)
 Postgres FTS (`tsvector`) and/or `pg_trgm` over filename basename, frontmatter aliases/tags/title, chunk content. Run alongside vector search. Fuse with Reciprocal Rank Fusion. Solves proper-noun queries structurally.
 
+> **Partially landed:** `pg_trgm` word-distance matching is now an experimental third channel running in parallel with vector and FTS searches, fused with weights 0.3 / 0.4 / 0.3. Selectable via `--trigram-mode strict|word`. Full RRF migration still pending.
+
 ### C. Filename-match score boost
 In `query.ts`: lowercase + strip diacritics both sides. Query tokens hit basename → add bonus (e.g. +0.2) or force include. Cheap heuristic, no FTS needed.
 

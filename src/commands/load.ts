@@ -36,7 +36,7 @@ export const loadCommand = defineCommand({
 			return embedFn(text);
 		};
 
-		const limit = pLimit(10);
+		const limit = pLimit(2);
 
 		const filePaths = await Array.fromAsync(loadFilesByGlob(args.glob));
 		filesSeen = filePaths.length;
