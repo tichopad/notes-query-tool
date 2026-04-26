@@ -1,8 +1,8 @@
 import { defineCommand, runMain } from "citty";
-import { loadCommand } from "./commands/load";
-import { queryCommand } from "./commands/query";
-import { db } from "./database/client";
-import { runMigrations } from "./database/migrate";
+import { loadCommand } from "./commands/load.ts";
+import { queryCommand } from "./commands/query.ts";
+import { db } from "./database/client.ts";
+import { runMigrations } from "./database/migrate.ts";
 
 const main = defineCommand({
 	meta: {

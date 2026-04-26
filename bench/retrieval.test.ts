@@ -1,5 +1,4 @@
-import assert from "node:assert/strict";
-import { after, before, test } from "node:test";
+import { beforeAll, expect, test } from "bun:test";
 import { count } from "drizzle-orm";
 import { db } from "../src/database/client.ts";
 import { chunksTable } from "../src/database/schema/chunks.ts";
@@ -9,14 +8,11 @@ import { fixtures } from "./fixtures.ts";
 
 let embedder: Embedder;
 
-before(async () => {
+beforeAll(async () => {
 	const [row] = await db.select({ count: count() }).from(chunksTable);
-	if (!row?.count) throw new Error("DB empty. Seed: pnpm run benchdata:load");
+	if (!row?.count)
+		throw new Error("DB empty. Seed: bun dev load --glob 'testdata/**/*.md'");
 	embedder = await initEmbedder();
-});
-
-after(async () => {
-	await db.$client.close();
 });
 
 function firstRelevantRank(
@@ -73,7 +69,6 @@ for (const fx of fixtures) {
 		const rank = firstRelevantRank(results, fx.expectedFiles);
 		const mrr = rank === Infinity ? 0 : 1 / rank;
 		logTable(fx, results, rank, mrr);
-		const minMrr = fx.minMrr ?? 0.5;
-		assert.ok(mrr >= minMrr, `${mrr} >= ${minMrr}`);
+		expect(mrr).toBeGreaterThanOrEqual(fx.minMrr ?? 0.5);
 	});
 }

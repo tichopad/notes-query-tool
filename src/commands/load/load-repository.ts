@@ -1,7 +1,7 @@
 import { and, count, eq, isNotNull, sql } from "drizzle-orm";
-import { db } from "../../database/client";
-import { chunksTable, type NewChunk } from "../../database/schema/chunks";
-import { filesTable } from "../../database/schema/files";
+import { db } from "../../database/client.ts";
+import { chunksTable, type NewChunk } from "../../database/schema/chunks.ts";
+import { filesTable } from "../../database/schema/files.ts";
 
 export type FileProcessingState = {
 	fileId: number;

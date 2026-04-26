@@ -1,11 +1,11 @@
 import { expect, test } from "bun:test";
-import type { Chunk } from "../../files/chunker";
-import type { FileProcessingState } from "./load-repository";
+import type { Chunk } from "../../files/chunker.ts";
+import type { FileProcessingState } from "./load-repository.ts";
 import {
 	type LoadRepositoryLike,
 	type ProcessFileDeps,
 	processLoadedFile,
-} from "./process-file";
+} from "./process-file.ts";
 
 const FAKE_CONTENT = "# Hello\n\nSome content here.";
 const FILE_PATH = "notes/test.md";

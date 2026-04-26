@@ -1,8 +1,8 @@
 import path from "node:path";
-import type { Chunk } from "../../files/chunker";
-import { extractFrontmatter } from "../../files/frontmatter";
-import { decideFileProcessing } from "./decide-file-processing";
-import type { FileProcessingState } from "./load-repository";
+import type { Chunk } from "../../files/chunker.ts";
+import { extractFrontmatter } from "../../files/frontmatter.ts";
+import { decideFileProcessing } from "./decide-file-processing.ts";
+import type { FileProcessingState } from "./load-repository.ts";
 
 export type FileLoadResult = {
 	status: "skipped" | "processed";

@@ -1,8 +1,8 @@
 import path from "node:path";
 import { cosineDistance, desc, eq, gt, sql } from "drizzle-orm";
-import { db } from "../database/client";
-import { chunksTable } from "../database/schema/chunks";
-import { filesTable } from "../database/schema/files";
+import { db } from "../database/client.ts";
+import { chunksTable } from "../database/schema/chunks.ts";
+import { filesTable } from "../database/schema/files.ts";
 
 const VECTOR_WEIGHT = 0.3;
 const VECTOR_LIMIT = 30;

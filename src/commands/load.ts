@@ -1,10 +1,10 @@
 import { defineCommand } from "citty";
 import pLimit from "p-limit";
-import { initEmbedder } from "../embedder";
-import { chunkMarkdown } from "../files/chunker";
-import { loadFilesByGlob } from "../files/load-files";
-import { DbLoadRepository } from "./load/load-repository";
-import { processLoadedFile } from "./load/process-file";
+import { initEmbedder } from "../embedder.ts";
+import { chunkMarkdown } from "../files/chunker.ts";
+import { loadFilesByGlob } from "../files/load-files.ts";
+import { DbLoadRepository } from "./load/load-repository.ts";
+import { processLoadedFile } from "./load/process-file.ts";
 
 export const loadCommand = defineCommand({
 	meta: {
@@ -28,7 +28,7 @@ export const loadCommand = defineCommand({
 
 		const repo = new DbLoadRepository();
 
-		let embedder: import("../embedder").Embedder | null = null;
+		let embedder: import("../embedder.ts").Embedder | null = null;
 		const getEmbedDocument = async (
 			body: string,
 			title?: string | null,

@@ -1,6 +1,6 @@
 import { defineCommand } from "citty";
-import { initEmbedder } from "../embedder";
-import { executeQuery } from "../query/execute";
+import { initEmbedder } from "../embedder.ts";
+import { executeQuery } from "../query/execute.ts";
 
 export const queryCommand = defineCommand({
 	meta: {

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { decideFileProcessing } from "./decide-file-processing";
+import { decideFileProcessing } from "./decide-file-processing.ts";
 
 test("null existing state → process", () => {
 	expect(decideFileProcessing("abc123", null)).toEqual({ action: "process" });

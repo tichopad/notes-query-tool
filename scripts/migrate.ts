@@ -3,7 +3,7 @@ import { pg_trgm } from "@electric-sql/pglite/contrib/pg_trgm";
 import { unaccent } from "@electric-sql/pglite/contrib/unaccent";
 import { vector } from "@electric-sql/pglite/vector";
 import { drizzle } from "drizzle-orm/pglite";
-import { runMigrations } from "../src/database/migrate";
+import { runMigrations } from "../src/database/migrate.ts";
 
 const pglite = new PGlite({
 	dataDir: "./dbdata/",
