@@ -1,1 +1,0 @@
-- [x] Run `bun run db:migrate` from a different cwd (e.g. `cd /tmp && bun /full/path/to/scripts/migrate.ts`) — succeeds with `Migrations applied successfully.`
