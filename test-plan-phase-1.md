@@ -1,4 +1,0 @@
-- [x] `rm -rf dbdata/ && bun run db:migrate` completes without errors.
-- [x] `SELECT extname FROM pg_extension WHERE extname = 'pg_trgm';` returns one row.
-- [x] `SELECT indexname FROM pg_indexes WHERE indexname = 'chunks_content_trgm_idx';` returns one row.
-- [x] `bun run dev load --glob 'testdata/**/*.md'` succeeds with no extension-related errors.

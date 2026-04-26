@@ -1,4 +1,0 @@
-- [x] README "Search channels" section clearly explains vector / FTS / trigram channels and their weights
-- [x] README `--trigram-mode strict|word` description is accurate and the default (strict) is stated
-- [x] README reset procedure (`rm -rf dbdata/` → `bun run db:migrate` → load) is unambiguous
-- [x] `improvements-plan.md` item B shows the "Partially landed" note with correct channel weights and flag name

@@ -1,5 +1,0 @@
-- [x] `bun run dev query --vs "Who is Rob Pinna?" --fts "Rob Pinna"` returns `testdata/People/Rob Pinna.md` in the top 10 (default `--trigram-mode strict`)
-- [x] Same query with `--trigram-mode word` runs without errors
-- [x] `--trigram-mode word` produces a different top-10 ordering than `strict` on at least one query
-- [x] `query_results.yaml` contains numeric `score` values and top results are relevant
-- [x] Run `EXPLAIN ANALYZE SELECT ... WHERE 'rob pinna' <<% content` and note whether `chunks_content_trgm_idx` is used by the planner
