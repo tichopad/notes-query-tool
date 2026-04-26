@@ -43,6 +43,20 @@ test("hello world", () => {
 - Use PGLite via Drizzle
 - In case of issues with a stale lock (e.g. process didn't close correctly), run `bun db:delete-stale-lock`
 
+### Ad-hoc SQL queries
+
+Run arbitrary SQL against the local PGLite DB (in `./dbdata/`):
+
+```bash
+bun db:query "SELECT id, path FROM notes LIMIT 5"
+# or via stdin
+bun db:query <<'SQL'
+SELECT count(*) FROM chunks;
+SQL
+```
+
+Output is terse TSV designed for agents/scripts. Vector columns are abbreviated. Row output capped at 200 rows (override with `DB_QUERY_LIMIT`). Multi-statement input supported.
+
 ## Changes verification
 
 Run `bun run fix && bun run check` after changes to verify them.

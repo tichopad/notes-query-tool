@@ -34,7 +34,7 @@ type TrackedDeps = {
 	chunkMarkdownCalls: ChunkMarkdownCall[];
 	upsertFileCalls: UpsertFileCall[];
 	replaceFileChunksCalls: ReplaceFileChunksCall[];
-	embedCalls: string[];
+	embedDocumentCalls: string[];
 };
 
 type MakeDepsOverrides = {
@@ -42,7 +42,7 @@ type MakeDepsOverrides = {
 	readText?: (filePath: string) => Promise<string>;
 	hashContent?: (content: string) => string;
 	chunkMarkdown?: (content: string, ...args: unknown[]) => Chunk[];
-	embed?: (text: string) => Promise<number[]>;
+	embedDocument?: (body: string, title?: string | null) => Promise<number[]>;
 	log?: (line: string) => void;
 	upsertFileId?: number;
 };
@@ -51,7 +51,7 @@ function makeDeps(overrides: MakeDepsOverrides = {}): TrackedDeps {
 	const chunkMarkdownCalls: ChunkMarkdownCall[] = [];
 	const upsertFileCalls: UpsertFileCall[] = [];
 	const replaceFileChunksCalls: ReplaceFileChunksCall[] = [];
-	const embedCalls: string[] = [];
+	const embedDocumentCalls: string[] = [];
 
 	const state = overrides.state ?? null;
 	const upsertFileId = overrides.upsertFileId ?? NEW_FILE_ID;
@@ -70,7 +70,7 @@ function makeDeps(overrides: MakeDepsOverrides = {}): TrackedDeps {
 	};
 
 	const chunkMarkdown = overrides.chunkMarkdown ?? (() => [makeChunk("c1")]);
-	const embed = overrides.embed ?? (async () => [0.1, 0.2]);
+	const embedDocument = overrides.embedDocument ?? (async () => [0.1, 0.2]);
 
 	const deps: ProcessFileDeps = {
 		repo,
@@ -80,9 +80,9 @@ function makeDeps(overrides: MakeDepsOverrides = {}): TrackedDeps {
 			chunkMarkdownCalls.push({ content, args });
 			return chunkMarkdown(content, ...args);
 		},
-		embed: async (text) => {
-			embedCalls.push(text);
-			return embed(text);
+		embedDocument: async (body, title) => {
+			embedDocumentCalls.push(body);
+			return embedDocument(body, title);
 		},
 		log: overrides.log ?? (() => {}),
 	};
@@ -92,7 +92,7 @@ function makeDeps(overrides: MakeDepsOverrides = {}): TrackedDeps {
 		chunkMarkdownCalls,
 		upsertFileCalls,
 		replaceFileChunksCalls,
-		embedCalls,
+		embedDocumentCalls,
 	};
 }
 
@@ -101,7 +101,7 @@ test("new file (state=null) → chunks, embeds, upserts, replaces with correct p
 	const tracked = makeDeps({
 		state: null,
 		chunkMarkdown: () => chunks,
-		embed: async (text) => [text.length, 0],
+		embedDocument: async (body) => [body.length, 0],
 	});
 
 	const result = await processLoadedFile(FILE_PATH, tracked.deps);
@@ -121,20 +121,25 @@ test("new file (state=null) → chunks, embeds, upserts, replaces with correct p
 	expect(upsertCall?.title).toBeNull();
 	expect(upsertCall?.updatedAt).toBeInstanceOf(Date);
 
-	// embed called per chunk with header-augmented text
+	// embedDocument called per chunk with bare chunk text (not augmented)
 	const header = "File: test\nPath: notes";
-	expect(tracked.embedCalls).toEqual([
-		`${header}\n\nfirst chunk`,
-		`${header}\n\nsecond chunk`,
-	]);
+	expect(tracked.embedDocumentCalls).toEqual(["first chunk", "second chunk"]);
 
-	// replaceFileChunks called once with fileId + ordered, paired chunks (augmented content)
+	// replaceFileChunks called once with fileId + ordered, paired chunks (augmented content stored, bare body embedded)
 	expect(tracked.replaceFileChunksCalls).toHaveLength(1);
 	const replaceCall = tracked.replaceFileChunksCalls[0];
 	expect(replaceCall?.fileId).toBe(NEW_FILE_ID);
 	expect(replaceCall?.chunks).toEqual([
-		{ content: `${header}\n\nfirst chunk`, embedding: [35, 0], chunkIndex: 0 },
-		{ content: `${header}\n\nsecond chunk`, embedding: [36, 0], chunkIndex: 1 },
+		{
+			content: `${header}\n\nfirst chunk`,
+			embedding: ["first chunk".length, 0],
+			chunkIndex: 0,
+		},
+		{
+			content: `${header}\n\nsecond chunk`,
+			embedding: ["second chunk".length, 0],
+			chunkIndex: 1,
+		},
 	]);
 });
 
@@ -152,7 +157,7 @@ test("unchanged file with embedded chunks → skipped, no work done", async () =
 
 	expect(result).toEqual({ status: "skipped", chunkCount: 0 });
 	expect(tracked.chunkMarkdownCalls).toHaveLength(0);
-	expect(tracked.embedCalls).toHaveLength(0);
+	expect(tracked.embedDocumentCalls).toHaveLength(0);
 	expect(tracked.upsertFileCalls).toHaveLength(0);
 	expect(tracked.replaceFileChunksCalls).toHaveLength(0);
 });
@@ -172,7 +177,7 @@ test("hash matches but no stored embeddings → reprocesses", async () => {
 
 	expect(result).toEqual({ status: "processed", chunkCount: 1 });
 	expect(tracked.chunkMarkdownCalls).toHaveLength(1);
-	expect(tracked.embedCalls).toEqual(["File: test\nPath: notes\n\nonly"]);
+	expect(tracked.embedDocumentCalls).toEqual(["only"]);
 	expect(tracked.upsertFileCalls).toHaveLength(1);
 	expect(tracked.replaceFileChunksCalls).toHaveLength(1);
 });
@@ -182,9 +187,9 @@ test("hash changed → reprocess preserves chunk↔embedding pairing and chunkIn
 	// Distinct embedding per chunk text so we can verify pairing.
 	const header = "File: test\nPath: notes";
 	const embeddingByText: Record<string, number[]> = {
-		[`${header}\n\nalpha`]: [1, 0, 0],
-		[`${header}\n\nbeta`]: [0, 1, 0],
-		[`${header}\n\ngamma`]: [0, 0, 1],
+		alpha: [1, 0, 0],
+		beta: [0, 1, 0],
+		gamma: [0, 0, 1],
 	};
 
 	const tracked = makeDeps({
@@ -195,9 +200,9 @@ test("hash changed → reprocess preserves chunk↔embedding pairing and chunkIn
 		},
 		hashContent: () => MATCHING_HASH,
 		chunkMarkdown: () => chunks,
-		embed: async (text) => {
-			const vec = embeddingByText[text];
-			if (!vec) throw new Error(`unexpected embed text: ${text}`);
+		embedDocument: async (body) => {
+			const vec = embeddingByText[body];
+			if (!vec) throw new Error(`unexpected embed body: ${body}`);
 			return vec;
 		},
 		upsertFileId: 7,
@@ -230,7 +235,7 @@ test("empty chunks[] → still upserts and calls replaceFileChunks with []", asy
 
 	expect(result).toEqual({ status: "processed", chunkCount: 0 });
 	expect(tracked.chunkMarkdownCalls).toHaveLength(1);
-	expect(tracked.embedCalls).toHaveLength(0);
+	expect(tracked.embedDocumentCalls).toHaveLength(0);
 	expect(tracked.upsertFileCalls).toHaveLength(1);
 	expect(tracked.replaceFileChunksCalls).toHaveLength(1);
 	expect(tracked.replaceFileChunksCalls[0]?.chunks).toEqual([]);

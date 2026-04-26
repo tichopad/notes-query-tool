@@ -2,9 +2,6 @@ import { defineCommand } from "citty";
 import { initEmbedder } from "../embedder";
 import { executeQuery } from "../query/execute";
 
-const INSTRUCT_PREFIX =
-	"Instruct: Retrieve relevant note chunks that answer the user's query\nQuery: ";
-
 export const queryCommand = defineCommand({
 	meta: {
 		name: "query",
@@ -39,12 +36,12 @@ export const queryCommand = defineCommand({
 			);
 		}
 
-		const getEmbedding = await initEmbedder();
+		const embedder = await initEmbedder();
 
 		const results = await executeQuery({
-			vectorText: INSTRUCT_PREFIX + args.vector,
+			vectorText: args.vector,
 			queryText: args.fulltext,
-			embedder: getEmbedding,
+			embedQuery: embedder.embedQuery.bind(embedder),
 			trigramMode: mode,
 		});
 

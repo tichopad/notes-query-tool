@@ -1,3 +1,4 @@
+import path from "node:path";
 import { cosineDistance, desc, eq, gt, sql } from "drizzle-orm";
 import { db } from "../database/client";
 import { chunksTable } from "../database/schema/chunks";
@@ -11,6 +12,21 @@ const TRIGRAM_WEIGHT = 0.3;
 const TRIGRAM_THRESHOLD = 0.3;
 const TRIGRAM_LIMIT = 20;
 
+const LINK_BOOST = 0.2;
+const LINK_BOOST_CAP = 0.4;
+const LINK_SOURCE_TOP_N = 10;
+
+function extractWikilinks(content: string): string[] {
+	const re = /\[\[([^\]|#]+)(?:[|#][^\]]*)?\]\]/g;
+	const seen = new Set<string>();
+	let m: RegExpExecArray | null = re.exec(content);
+	while (m !== null) {
+		if (m[1] !== undefined) seen.add(m[1].trim());
+		m = re.exec(content);
+	}
+	return [...seen];
+}
+
 export type QueryResult = {
 	id: number;
 	filePath: string;
@@ -23,7 +39,7 @@ export type QueryResult = {
 export type ExecuteQueryOpts = {
 	vectorText: string;
 	queryText: string;
-	embedder: (text: string) => Promise<number[]>;
+	embedQuery: (text: string) => Promise<number[]>;
 	weights?: { vector: number; fts: number; trigram: number };
 	limits?: { vector: number; fts: number; trigram: number };
 	trigramThreshold?: number;
@@ -37,7 +53,7 @@ export async function executeQuery(
 	const {
 		vectorText,
 		queryText,
-		embedder,
+		embedQuery,
 		weights = {
 			vector: VECTOR_WEIGHT,
 			fts: FTS_WEIGHT,
@@ -53,7 +69,7 @@ export async function executeQuery(
 		topK = 10,
 	} = opts;
 
-	const queryVector = await embedder(vectorText);
+	const queryVector = await embedQuery(vectorText);
 
 	const similarity = sql<number>`1 - (${cosineDistance(chunksTable.embedding, queryVector)})`;
 
@@ -152,6 +168,47 @@ export async function executeQuery(
 		} else {
 			merged.set(r.id, { ...r, score: tgScore });
 		}
+	}
+
+	// Wikilink-aware re-ranking: boost files referenced by top source chunks
+	const allFiles = await db
+		.select({ id: filesTable.id, filePath: filesTable.filePath })
+		.from(filesTable);
+	const basenameToFilePaths = new Map<string, Set<string>>();
+	for (const f of allFiles) {
+		const base = path.basename(f.filePath, ".md");
+		if (!basenameToFilePaths.has(base)) {
+			basenameToFilePaths.set(base, new Set());
+		}
+		basenameToFilePaths.get(base)?.add(f.filePath);
+	}
+
+	const filePathsInResults = new Set<string>(
+		[...merged.values()].map((r) => r.filePath),
+	);
+
+	const topSources = [...merged.values()]
+		.sort((a, b) => b.score - a.score)
+		.slice(0, LINK_SOURCE_TOP_N);
+
+	const boosts = new Map<string, number>();
+	for (const src of topSources) {
+		const links = extractWikilinks(src.content);
+		for (const link of links) {
+			const targets = basenameToFilePaths.get(link);
+			if (!targets) continue;
+			for (const fp of targets) {
+				if (fp === src.filePath) continue;
+				if (!filePathsInResults.has(fp)) continue;
+				const prev = boosts.get(fp) ?? 0;
+				boosts.set(fp, Math.min(prev + LINK_BOOST * src.score, LINK_BOOST_CAP));
+			}
+		}
+	}
+
+	for (const chunk of merged.values()) {
+		const boost = boosts.get(chunk.filePath);
+		if (boost) chunk.score += boost;
 	}
 
 	// Per-file max-pool: keep best chunk per file, small bonus for breadth

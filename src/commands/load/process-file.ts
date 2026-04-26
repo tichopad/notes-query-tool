@@ -30,7 +30,7 @@ export type ProcessFileDeps = {
 	readText(filePath: string): Promise<string>;
 	hashContent(content: string): string;
 	chunkMarkdown(content: string, ...args: unknown[]): Chunk[];
-	embed(text: string): Promise<number[]>;
+	embedDocument(body: string, title?: string | null): Promise<number[]>;
 	log(line: string): void;
 };
 
@@ -38,7 +38,8 @@ export async function processLoadedFile(
 	filePath: string,
 	deps: ProcessFileDeps,
 ): Promise<FileLoadResult> {
-	const { repo, readText, hashContent, chunkMarkdown, embed, log } = deps;
+	const { repo, readText, hashContent, chunkMarkdown, embedDocument, log } =
+		deps;
 
 	const content = await readText(filePath);
 	const contentHash = hashContent(content);
@@ -69,6 +70,21 @@ export async function processLoadedFile(
 	}
 	const headerPrefix = headerLines.join("\n");
 
+	// Build titleString for embedDocument's title slot (basename + frontmatter fields)
+	const titleParts: string[] = [basename];
+	if (attributes) {
+		const fmTitle = attributes.title;
+		if (typeof fmTitle === "string" && fmTitle && fmTitle !== basename)
+			titleParts.push(fmTitle);
+		const aliases = attributes.aliases;
+		if (Array.isArray(aliases) && aliases.length > 0)
+			titleParts.push(`aliases: ${aliases.join(", ")}`);
+		const tags = attributes.tags;
+		if (Array.isArray(tags) && tags.length > 0)
+			titleParts.push(`tags: ${tags.join(", ")}`);
+	}
+	const titleString = titleParts.join("; ");
+
 	const chunks = chunkMarkdown(body || content, CHUNK_LIMIT_CHARS);
 
 	const { id: fileId } = await repo.upsertFile(
@@ -81,9 +97,12 @@ export async function processLoadedFile(
 	const chunkDocs = await Promise.all(
 		chunks.map(async (chunk, i) => {
 			const augmented = `${headerPrefix}\n\n${chunk.text}`;
+			const bodyText = chunk.text.trim();
 			return {
 				content: augmented,
-				embedding: await embed(augmented),
+				embedding: bodyText
+					? await embedDocument(bodyText, titleString)
+					: await embedDocument(augmented, titleString),
 				chunkIndex: i,
 			};
 		}),

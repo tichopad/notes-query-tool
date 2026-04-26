@@ -28,12 +28,15 @@ export const loadCommand = defineCommand({
 
 		const repo = new DbLoadRepository();
 
-		let embedFn: ((text: string) => Promise<number[]>) | null = null;
-		const getEmbed = async (text: string): Promise<number[]> => {
-			if (!embedFn) {
-				embedFn = await initEmbedder();
+		let embedder: import("../embedder").Embedder | null = null;
+		const getEmbedDocument = async (
+			body: string,
+			title?: string | null,
+		): Promise<number[]> => {
+			if (!embedder) {
+				embedder = await initEmbedder();
 			}
-			return embedFn(text);
+			return embedder.embedDocument(body, title);
 		};
 
 		const limit = pLimit(2);
@@ -50,7 +53,7 @@ export const loadCommand = defineCommand({
 						hashContent: (content) =>
 							new Bun.CryptoHasher("sha256").update(content).digest("hex"),
 						chunkMarkdown,
-						embed: getEmbed,
+						embedDocument: getEmbedDocument,
 						log: console.log,
 					}),
 				),

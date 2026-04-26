@@ -33,17 +33,25 @@ function extractVector(data: ArrayLike<number>): number[] {
 	return vector;
 }
 
+const QUERY_PREFIX = "task: search result | query: ";
+const DOC_PREFIX_PREFIX = "title: ";
+const DOC_PREFIX_INFIX = " | text: ";
+const DEFAULT_TITLE = "none";
+
+export interface Embedder {
+	embedQuery(text: string): Promise<number[]>;
+	embedDocument(body: string, title?: string | null): Promise<number[]>;
+}
+
 /**
  * Initialises the embedding model, preferring WebGPU with automatic CPU fallback.
- * Returns a `getEmbedding` function that embeds a single text string using
- * mean-pooled, normalised features. If WebGPU produces NaN values at runtime,
- * it transparently re-initialises on CPU and retries.
- * @returns Async function that maps a text string to its embedding vector.
+ * Returns an `Embedder` object with `embedQuery` and `embedDocument` methods using
+ * mean-pooled, normalised features and EmbeddingGemma task prefixes.
+ * If WebGPU produces NaN values at runtime, it transparently re-initialises on CPU and retries.
+ * @returns Embedder object with query and document embedding functions.
  * @throws {Error} If the CPU backend also produces non-finite values.
  */
-export async function initEmbedder(): Promise<
-	(text: string) => Promise<number[]>
-> {
+export async function initEmbedder(): Promise<Embedder> {
 	let embed: FeatureExtractionPipeline;
 	let device: "webgpu" | "cpu" = "webgpu";
 
@@ -55,7 +63,7 @@ export async function initEmbedder(): Promise<
 		embed = await createEmbedder("cpu");
 	}
 
-	return async function getEmbedding(text: string): Promise<number[]> {
+	async function getEmbedding(text: string): Promise<number[]> {
 		const result = await embed(text, {
 			pooling: "mean",
 			normalize: true,
@@ -76,5 +84,15 @@ export async function initEmbedder(): Promise<
 		}
 
 		throw new Error("Embedding model produced non-finite values");
+	}
+
+	return {
+		embedQuery(text: string): Promise<number[]> {
+			return getEmbedding(QUERY_PREFIX + text);
+		},
+		embedDocument(body: string, title?: string | null): Promise<number[]> {
+			const t = title?.trim() || DEFAULT_TITLE;
+			return getEmbedding(DOC_PREFIX_PREFIX + t + DOC_PREFIX_INFIX + body);
+		},
 	};
 }

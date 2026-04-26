@@ -10,6 +10,8 @@
 		"db:query": "bun scripts/query.ts",
 		"db:push": "drizzle-kit push",
 		"db:studio": "drizzle-kit studio",
+		"testdata:load": "bun dev load --glob 'testdata/**/*.md'",
+		"testdata:reindex": "rm -rf dbdata && bun run db:migrate && bun run testdata:load",
 		"dev": "bun run src/main.ts",
 		"check": "biome check . && tsc --noEmit && bun test",
 		"fix": "biome check --write ."
