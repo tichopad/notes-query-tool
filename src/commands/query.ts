@@ -41,13 +41,10 @@ export const queryCommand = defineCommand({
 
 		const getEmbedding = await initEmbedder();
 
-		// embedder adds INSTRUCT_PREFIX; queryText (args.fulltext) is used for FTS/trigram
-		const embedder = async (_text: string) =>
-			getEmbedding(INSTRUCT_PREFIX + args.vector);
-
 		const results = await executeQuery({
+			vectorText: INSTRUCT_PREFIX + args.vector,
 			queryText: args.fulltext,
-			embedder,
+			embedder: getEmbedding,
 			trigramMode: mode,
 		});
 

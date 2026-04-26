@@ -21,6 +21,7 @@ export type QueryResult = {
 };
 
 export type ExecuteQueryOpts = {
+	vectorText: string;
 	queryText: string;
 	embedder: (text: string) => Promise<number[]>;
 	weights?: { vector: number; fts: number; trigram: number };
@@ -34,6 +35,7 @@ export async function executeQuery(
 	opts: ExecuteQueryOpts,
 ): Promise<QueryResult[]> {
 	const {
+		vectorText,
 		queryText,
 		embedder,
 		weights = {
@@ -51,7 +53,7 @@ export async function executeQuery(
 		topK = 10,
 	} = opts;
 
-	const queryVector = await embedder(queryText);
+	const queryVector = await embedder(vectorText);
 
 	const similarity = sql<number>`1 - (${cosineDistance(chunksTable.embedding, queryVector)})`;
 
@@ -152,5 +154,25 @@ export async function executeQuery(
 		}
 	}
 
-	return [...merged.values()].sort((a, b) => b.score - a.score).slice(0, topK);
+	// Per-file max-pool: keep best chunk per file, small bonus for breadth
+	const byFile = new Map<
+		string,
+		{ result: QueryResult; extraChunks: number }
+	>();
+	for (const result of merged.values()) {
+		const existing = byFile.get(result.filePath);
+		if (!existing || result.score > existing.result.score) {
+			byFile.set(result.filePath, {
+				result,
+				extraChunks: existing ? existing.extraChunks + 1 : 0,
+			});
+		} else {
+			existing.extraChunks++;
+		}
+	}
+
+	return [...byFile.values()]
+		.map(({ result }) => result)
+		.sort((a, b) => b.score - a.score)
+		.slice(0, topK);
 }

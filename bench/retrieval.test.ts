@@ -1,18 +1,22 @@
-import { beforeAll, expect, test } from "bun:test";
+import assert from "node:assert/strict";
+import { after, before, test } from "node:test";
 import { count } from "drizzle-orm";
-import { db } from "../src/database/client";
-import { chunksTable } from "../src/database/schema/chunks";
-import { initEmbedder } from "../src/embedder";
-import { executeQuery, type QueryResult } from "../src/query/execute";
-import { fixtures } from "./fixtures";
+import { db } from "../src/database/client.ts";
+import { chunksTable } from "../src/database/schema/chunks.ts";
+import { type Embedder, initEmbedder } from "../src/embedder.ts";
+import { executeQuery, type QueryResult } from "../src/query/execute.ts";
+import { fixtures } from "./fixtures.ts";
 
-let embed: (s: string) => Promise<number[]>;
+let embedder: Embedder;
 
-beforeAll(async () => {
+before(async () => {
 	const [row] = await db.select({ count: count() }).from(chunksTable);
-	if (!row?.count)
-		throw new Error("DB empty. Seed: bun dev load --glob 'testdata/**/*.md'");
-	embed = await initEmbedder();
+	if (!row?.count) throw new Error("DB empty. Seed: pnpm run benchdata:load");
+	embedder = await initEmbedder();
+});
+
+after(async () => {
+	await db.$client.close();
 });
 
 function firstRelevantRank(
@@ -29,13 +33,19 @@ function firstRelevantRank(
 }
 
 function logTable(
-	fx: { name: string; query: string; expectedFiles: string[] },
+	fx: {
+		name: string;
+		vectorQuery: string;
+		ftsQuery: string;
+		expectedFiles: string[];
+	},
 	results: QueryResult[],
 	rank: number,
 	mrr: number,
 ): void {
 	console.log(`\n--- ${fx.name} ---`);
-	console.log(`Query:    ${fx.query}`);
+	console.log(`Vector:   ${fx.vectorQuery}`);
+	console.log(`FTS:      ${fx.ftsQuery}`);
 	console.log(`Expected: ${fx.expectedFiles.join(", ")}`);
 	console.log(
 		`MRR:      ${mrr === 0 ? "0 (not found)" : mrr.toFixed(4)}  Rank: ${rank === Infinity ? "∞" : rank}`,
@@ -55,13 +65,15 @@ function logTable(
 for (const fx of fixtures) {
 	test(`retrieval: ${fx.name}`, async () => {
 		const results = await executeQuery({
-			queryText: fx.query,
-			embedder: embed,
+			vectorText: fx.vectorQuery,
+			queryText: fx.ftsQuery,
+			embedQuery: embedder.embedQuery.bind(embedder),
 			topK: 10,
 		});
 		const rank = firstRelevantRank(results, fx.expectedFiles);
 		const mrr = rank === Infinity ? 0 : 1 / rank;
 		logTable(fx, results, rank, mrr);
-		expect(mrr).toBeGreaterThanOrEqual(fx.minMrr ?? 0.5);
+		const minMrr = fx.minMrr ?? 0.5;
+		assert.ok(mrr >= minMrr, `${mrr} >= ${minMrr}`);
 	});
 }

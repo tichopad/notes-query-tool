@@ -1,4 +1,6 @@
+import path from "node:path";
 import type { Chunk } from "../../files/chunker";
+import { extractFrontmatter } from "../../files/frontmatter";
 import { decideFileProcessing } from "./decide-file-processing";
 import type { FileProcessingState } from "./load-repository";
 
@@ -49,7 +51,25 @@ export async function processLoadedFile(
 		return { status: "skipped", chunkCount: 0 };
 	}
 
-	const chunks = chunkMarkdown(content, CHUNK_LIMIT_CHARS);
+	const { attributes, body } = extractFrontmatter(content);
+
+	// Build header prefix: filename + path + optional frontmatter fields
+	const basename = path.basename(filePath, ".md");
+	const parentDir = path.basename(path.dirname(filePath));
+	const headerLines = [`File: ${basename}`, `Path: ${parentDir}`];
+	if (attributes) {
+		const title = attributes.title;
+		if (typeof title === "string" && title) headerLines.push(`Title: ${title}`);
+		const aliases = attributes.aliases;
+		if (Array.isArray(aliases) && aliases.length > 0)
+			headerLines.push(`Aliases: ${aliases.join(", ")}`);
+		const tags = attributes.tags;
+		if (Array.isArray(tags) && tags.length > 0)
+			headerLines.push(`Tags: ${tags.join(", ")}`);
+	}
+	const headerPrefix = headerLines.join("\n");
+
+	const chunks = chunkMarkdown(body || content, CHUNK_LIMIT_CHARS);
 
 	const { id: fileId } = await repo.upsertFile(
 		filePath,
@@ -59,11 +79,14 @@ export async function processLoadedFile(
 	);
 
 	const chunkDocs = await Promise.all(
-		chunks.map(async (chunk, i) => ({
-			content: chunk.text,
-			embedding: await embed(chunk.text),
-			chunkIndex: i,
-		})),
+		chunks.map(async (chunk, i) => {
+			const augmented = `${headerPrefix}\n\n${chunk.text}`;
+			return {
+				content: augmented,
+				embedding: await embed(augmented),
+				chunkIndex: i,
+			};
+		}),
 	);
 
 	await repo.replaceFileChunks(fileId, chunkDocs);

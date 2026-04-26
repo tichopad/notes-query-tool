@@ -108,9 +108,9 @@ test("new file (state=null) → chunks, embeds, upserts, replaces with correct p
 
 	expect(result).toEqual({ status: "processed", chunkCount: 2 });
 
-	// chunkMarkdown called once with content + size 2000
+	// chunkMarkdown called once with body (frontmatter stripped) + size 2000
 	expect(tracked.chunkMarkdownCalls).toHaveLength(1);
-	expect(tracked.chunkMarkdownCalls[0]?.content).toBe(FAKE_CONTENT);
+	expect(tracked.chunkMarkdownCalls[0]?.content).toBe(FAKE_CONTENT); // no frontmatter → body == content
 	expect(tracked.chunkMarkdownCalls[0]?.args).toEqual([2000]);
 
 	// upsertFile called once with the right args
@@ -121,16 +121,20 @@ test("new file (state=null) → chunks, embeds, upserts, replaces with correct p
 	expect(upsertCall?.title).toBeNull();
 	expect(upsertCall?.updatedAt).toBeInstanceOf(Date);
 
-	// embed called per chunk, in order
-	expect(tracked.embedCalls).toEqual(["first chunk", "second chunk"]);
+	// embed called per chunk with header-augmented text
+	const header = "File: test\nPath: notes";
+	expect(tracked.embedCalls).toEqual([
+		`${header}\n\nfirst chunk`,
+		`${header}\n\nsecond chunk`,
+	]);
 
-	// replaceFileChunks called once with fileId + ordered, paired chunks
+	// replaceFileChunks called once with fileId + ordered, paired chunks (augmented content)
 	expect(tracked.replaceFileChunksCalls).toHaveLength(1);
 	const replaceCall = tracked.replaceFileChunksCalls[0];
 	expect(replaceCall?.fileId).toBe(NEW_FILE_ID);
 	expect(replaceCall?.chunks).toEqual([
-		{ content: "first chunk", embedding: [11, 0], chunkIndex: 0 },
-		{ content: "second chunk", embedding: [12, 0], chunkIndex: 1 },
+		{ content: `${header}\n\nfirst chunk`, embedding: [35, 0], chunkIndex: 0 },
+		{ content: `${header}\n\nsecond chunk`, embedding: [36, 0], chunkIndex: 1 },
 	]);
 });
 
@@ -168,7 +172,7 @@ test("hash matches but no stored embeddings → reprocesses", async () => {
 
 	expect(result).toEqual({ status: "processed", chunkCount: 1 });
 	expect(tracked.chunkMarkdownCalls).toHaveLength(1);
-	expect(tracked.embedCalls).toEqual(["only"]);
+	expect(tracked.embedCalls).toEqual(["File: test\nPath: notes\n\nonly"]);
 	expect(tracked.upsertFileCalls).toHaveLength(1);
 	expect(tracked.replaceFileChunksCalls).toHaveLength(1);
 });
@@ -176,10 +180,11 @@ test("hash matches but no stored embeddings → reprocesses", async () => {
 test("hash changed → reprocess preserves chunk↔embedding pairing and chunkIndex order", async () => {
 	const chunks = [makeChunk("alpha"), makeChunk("beta"), makeChunk("gamma")];
 	// Distinct embedding per chunk text so we can verify pairing.
+	const header = "File: test\nPath: notes";
 	const embeddingByText: Record<string, number[]> = {
-		alpha: [1, 0, 0],
-		beta: [0, 1, 0],
-		gamma: [0, 0, 1],
+		[`${header}\n\nalpha`]: [1, 0, 0],
+		[`${header}\n\nbeta`]: [0, 1, 0],
+		[`${header}\n\ngamma`]: [0, 0, 1],
 	};
 
 	const tracked = makeDeps({
@@ -206,9 +211,9 @@ test("hash changed → reprocess preserves chunk↔embedding pairing and chunkIn
 	const replaceCall = tracked.replaceFileChunksCalls[0];
 	expect(replaceCall?.fileId).toBe(7);
 	expect(replaceCall?.chunks).toEqual([
-		{ content: "alpha", embedding: [1, 0, 0], chunkIndex: 0 },
-		{ content: "beta", embedding: [0, 1, 0], chunkIndex: 1 },
-		{ content: "gamma", embedding: [0, 0, 1], chunkIndex: 2 },
+		{ content: `${header}\n\nalpha`, embedding: [1, 0, 0], chunkIndex: 0 },
+		{ content: `${header}\n\nbeta`, embedding: [0, 1, 0], chunkIndex: 1 },
+		{ content: `${header}\n\ngamma`, embedding: [0, 0, 1], chunkIndex: 2 },
 	]);
 
 	// upsertFile receives the NEW hash, not the stale stored one.

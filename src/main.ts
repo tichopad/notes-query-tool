@@ -27,3 +27,11 @@ process.on("unhandledRejection", (reason) => {
 	console.error("Unhandled Rejection:", reason);
 	db.$client.close().finally(() => process.exit(1));
 });
+process.on("uncaughtException", (error) => {
+	console.error("Uncaught Exception:", error);
+	db.$client.close().finally(() => process.exit(1));
+});
+process.on("SIGINT", () => {
+	console.log("Received SIGINT, shutting down...");
+	db.$client.close().finally(() => process.exit(0));
+});
