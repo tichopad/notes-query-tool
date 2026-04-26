@@ -2,6 +2,7 @@ import { defineCommand, runMain } from "citty";
 import { loadCommand } from "./commands/load";
 import { queryCommand } from "./commands/query";
 import { db } from "./database/client";
+import { runMigrations } from "./database/migrate";
 
 const main = defineCommand({
 	meta: {
@@ -15,6 +16,7 @@ const main = defineCommand({
 	},
 	async setup() {
 		await db.$client.waitReady;
+		await runMigrations(db);
 	},
 	async cleanup() {
 		await db.$client.close();

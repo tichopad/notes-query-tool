@@ -7,5 +7,9 @@ const migrationsFolder = fileURLToPath(
 );
 
 export async function runMigrations(db: PgliteDatabase): Promise<void> {
-	await migrate(db, { migrationsFolder });
+	try {
+		await migrate(db, { migrationsFolder });
+	} catch (err) {
+		throw new Error(`Migration failed: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
+	}
 }
