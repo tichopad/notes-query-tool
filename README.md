@@ -30,6 +30,22 @@ bun run db:migrate
 bun dev load --glob 'notes/**/*.md'
 ```
 
+## Development
+
+### Ad-hoc SQL queries
+
+Run arbitrary SQL against the local PGLite DB (in `./dbdata/`):
+
+```bash
+bun db:query "SELECT id, path FROM notes LIMIT 5"
+# or via stdin
+bun db:query <<'SQL'
+SELECT count(*) FROM chunks;
+SQL
+```
+
+Output is terse TSV designed for agents/scripts. Vector columns are abbreviated. Row output capped at 200 rows (override with `DB_QUERY_LIMIT`). Multi-statement input supported.
+
 ## Examples
 
 ```sh
