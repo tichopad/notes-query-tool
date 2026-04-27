@@ -1,3 +1,5 @@
+import { parse as parseYaml } from "yaml";
+
 const FRONTMATTER_RE = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/;
 
 interface FrontmatterResult {
@@ -17,7 +19,7 @@ export function extractFrontmatter(content: string): FrontmatterResult {
 	}
 
 	try {
-		const parsed = Bun.YAML.parse(match[1] as string);
+		const parsed = parseYaml(match[1] as string);
 		const attributes =
 			parsed && typeof parsed === "object" && !Array.isArray(parsed)
 				? (parsed as Record<string, unknown>)

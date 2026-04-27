@@ -197,7 +197,7 @@ import paths.
 
 ---
 
-## Phase 2: Replace Bun runtime APIs ⏳
+## Phase 2: Replace Bun runtime APIs ✅
 
 ### Overview
 
@@ -280,7 +280,7 @@ dependency in this phase.
 
 ### Verification
 
-- [ ] `bun run check` passes (Biome + tsc + bun:test).
+- [x] `bun run check` passes (Biome + tsc + bun:test).
 - [ ] `bun run dev load --glob 'testdata/**/*.md'` completes successfully
       against a populated `testdata/`.
 - [ ] `bun run dev query --vs "anything" --fts "anything"` produces

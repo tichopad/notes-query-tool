@@ -60,8 +60,8 @@ function printResult(
 // --- input ---
 let sql: string | undefined;
 
-if (Bun.argv[2]) {
-	sql = Bun.argv[2];
+if (process.argv[2]) {
+	sql = process.argv[2];
 } else if (!process.stdin.isTTY) {
 	const chunks: Uint8Array[] = [];
 	for await (const chunk of process.stdin) {

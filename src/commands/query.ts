@@ -1,4 +1,6 @@
+import { unlink, writeFile } from "node:fs/promises";
 import { defineCommand } from "citty";
+import { stringify as stringifyYaml } from "yaml";
 import { initEmbedder } from "../embedder.ts";
 import { executeQuery } from "../query/execute.ts";
 
@@ -62,9 +64,7 @@ export const queryCommand = defineCommand({
 			console.log(`${header} (score: ${Number(row.score).toFixed(3)})`);
 		}
 
-		await Bun.file("query_results.yaml")
-			.delete()
-			.catch(() => {});
-		await Bun.write("query_results.yaml", Bun.YAML.stringify(results, null, 2));
+		await unlink("query_results.yaml").catch(() => {});
+		await writeFile("query_results.yaml", stringifyYaml(results));
 	},
 });

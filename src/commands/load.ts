@@ -1,10 +1,11 @@
+import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import { defineCommand } from "citty";
-import pLimit from "p-limit";
-import { initEmbedder } from "../embedder.ts";
+import { type Embedder, initEmbedder } from "../embedder.ts";
 import { chunkMarkdown } from "../files/chunker.ts";
 import { loadFilesByGlob } from "../files/load-files.ts";
 import { DbLoadRepository } from "./load/load-repository.ts";
-import { processLoadedFile } from "./load/process-file.ts";
+import { type FileLoadResult, processLoadedFile } from "./load/process-file.ts";
 
 export const loadCommand = defineCommand({
 	meta: {
@@ -28,7 +29,7 @@ export const loadCommand = defineCommand({
 
 		const repo = new DbLoadRepository();
 
-		let embedder: import("../embedder.ts").Embedder | null = null;
+		let embedder: Embedder | null = null;
 		const getEmbedDocument = async (
 			body: string,
 			title?: string | null,
@@ -39,26 +40,24 @@ export const loadCommand = defineCommand({
 			return embedder.embedDocument(body, title);
 		};
 
-		const limit = pLimit(2);
+		const filePaths: string[] = [];
+		const results: FileLoadResult[] = [];
 
-		const filePaths = await Array.fromAsync(loadFilesByGlob(args.glob));
+		for await (const filePath of loadFilesByGlob(args.glob)) {
+			const result = await processLoadedFile(filePath, {
+				repo,
+				readText: (p) => readFile(p, "utf8"),
+				hashContent: (content) =>
+					createHash("sha256").update(content).digest("hex"),
+				chunkMarkdown,
+				embedDocument: getEmbedDocument,
+				log: console.log,
+			});
+			filePaths.push(filePath);
+			results.push(result);
+		}
+
 		filesSeen = filePaths.length;
-
-		const results = await Promise.all(
-			filePaths.map((filePath) =>
-				limit(() =>
-					processLoadedFile(filePath, {
-						repo,
-						readText: (p) => Bun.file(p).text(),
-						hashContent: (content) =>
-							new Bun.CryptoHasher("sha256").update(content).digest("hex"),
-						chunkMarkdown,
-						embedDocument: getEmbedDocument,
-						log: console.log,
-					}),
-				),
-			),
-		);
 
 		for (const result of results) {
 			if (result.status === "skipped") {
