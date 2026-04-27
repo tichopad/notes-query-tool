@@ -1,0 +1,5 @@
+- [x] `bun run dev load --glob 'testdata/**/*.md'` ingests fixtures without errors
+- [x] `bun run dev query --vs "test" --fts "test"` produces ranked results
+- [x] `query_results.yaml` is written with valid YAML content
+- [x] `bun run db:migrate` against a fresh `dbdata/` succeeds
+- [x] `bun run db:query "SELECT count(*) FROM chunks"` returns a row

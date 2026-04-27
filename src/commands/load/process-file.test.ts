@@ -1,4 +1,5 @@
-import { expect, test } from "bun:test";
+import assert from "node:assert/strict";
+import { test } from "node:test";
 import type { Chunk } from "../../files/chunker.ts";
 import type { FileProcessingState } from "./load-repository.ts";
 import {
@@ -106,30 +107,30 @@ test("new file (state=null) → chunks, embeds, upserts, replaces with correct p
 
 	const result = await processLoadedFile(FILE_PATH, tracked.deps);
 
-	expect(result).toEqual({ status: "processed", chunkCount: 2 });
+	assert.deepEqual(result, { status: "processed", chunkCount: 2 });
 
 	// chunkMarkdown called once with body (frontmatter stripped) + size 2000
-	expect(tracked.chunkMarkdownCalls).toHaveLength(1);
-	expect(tracked.chunkMarkdownCalls[0]?.content).toBe(FAKE_CONTENT); // no frontmatter → body == content
-	expect(tracked.chunkMarkdownCalls[0]?.args).toEqual([2000]);
+	assert.equal(tracked.chunkMarkdownCalls.length, 1);
+	assert.equal(tracked.chunkMarkdownCalls[0]?.content, FAKE_CONTENT); // no frontmatter → body == content
+	assert.deepEqual(tracked.chunkMarkdownCalls[0]?.args, [2000]);
 
 	// upsertFile called once with the right args
-	expect(tracked.upsertFileCalls).toHaveLength(1);
+	assert.equal(tracked.upsertFileCalls.length, 1);
 	const upsertCall = tracked.upsertFileCalls[0];
-	expect(upsertCall?.filePath).toBe(FILE_PATH);
-	expect(upsertCall?.contentHash).toBe(MATCHING_HASH);
-	expect(upsertCall?.title).toBeNull();
-	expect(upsertCall?.updatedAt).toBeInstanceOf(Date);
+	assert.equal(upsertCall?.filePath, FILE_PATH);
+	assert.equal(upsertCall?.contentHash, MATCHING_HASH);
+	assert.equal(upsertCall?.title, null);
+	assert.ok(upsertCall?.updatedAt instanceof Date, "expected instanceof Date");
 
 	// embedDocument called per chunk with bare chunk text (not augmented)
 	const header = "File: test\nPath: notes";
-	expect(tracked.embedDocumentCalls).toEqual(["first chunk", "second chunk"]);
+	assert.deepEqual(tracked.embedDocumentCalls, ["first chunk", "second chunk"]);
 
 	// replaceFileChunks called once with fileId + ordered, paired chunks (augmented content stored, bare body embedded)
-	expect(tracked.replaceFileChunksCalls).toHaveLength(1);
+	assert.equal(tracked.replaceFileChunksCalls.length, 1);
 	const replaceCall = tracked.replaceFileChunksCalls[0];
-	expect(replaceCall?.fileId).toBe(NEW_FILE_ID);
-	expect(replaceCall?.chunks).toEqual([
+	assert.equal(replaceCall?.fileId, NEW_FILE_ID);
+	assert.deepEqual(replaceCall?.chunks, [
 		{
 			content: `${header}\n\nfirst chunk`,
 			embedding: ["first chunk".length, 0],
@@ -155,11 +156,11 @@ test("unchanged file with embedded chunks → skipped, no work done", async () =
 
 	const result = await processLoadedFile(FILE_PATH, tracked.deps);
 
-	expect(result).toEqual({ status: "skipped", chunkCount: 0 });
-	expect(tracked.chunkMarkdownCalls).toHaveLength(0);
-	expect(tracked.embedDocumentCalls).toHaveLength(0);
-	expect(tracked.upsertFileCalls).toHaveLength(0);
-	expect(tracked.replaceFileChunksCalls).toHaveLength(0);
+	assert.deepEqual(result, { status: "skipped", chunkCount: 0 });
+	assert.equal(tracked.chunkMarkdownCalls.length, 0);
+	assert.equal(tracked.embedDocumentCalls.length, 0);
+	assert.equal(tracked.upsertFileCalls.length, 0);
+	assert.equal(tracked.replaceFileChunksCalls.length, 0);
 });
 
 test("hash matches but no stored embeddings → reprocesses", async () => {
@@ -175,11 +176,11 @@ test("hash matches but no stored embeddings → reprocesses", async () => {
 
 	const result = await processLoadedFile(FILE_PATH, tracked.deps);
 
-	expect(result).toEqual({ status: "processed", chunkCount: 1 });
-	expect(tracked.chunkMarkdownCalls).toHaveLength(1);
-	expect(tracked.embedDocumentCalls).toEqual(["only"]);
-	expect(tracked.upsertFileCalls).toHaveLength(1);
-	expect(tracked.replaceFileChunksCalls).toHaveLength(1);
+	assert.deepEqual(result, { status: "processed", chunkCount: 1 });
+	assert.equal(tracked.chunkMarkdownCalls.length, 1);
+	assert.deepEqual(tracked.embedDocumentCalls, ["only"]);
+	assert.equal(tracked.upsertFileCalls.length, 1);
+	assert.equal(tracked.replaceFileChunksCalls.length, 1);
 });
 
 test("hash changed → reprocess preserves chunk↔embedding pairing and chunkIndex order", async () => {
@@ -210,19 +211,19 @@ test("hash changed → reprocess preserves chunk↔embedding pairing and chunkIn
 
 	const result = await processLoadedFile(FILE_PATH, tracked.deps);
 
-	expect(result).toEqual({ status: "processed", chunkCount: 3 });
+	assert.deepEqual(result, { status: "processed", chunkCount: 3 });
 
-	expect(tracked.replaceFileChunksCalls).toHaveLength(1);
+	assert.equal(tracked.replaceFileChunksCalls.length, 1);
 	const replaceCall = tracked.replaceFileChunksCalls[0];
-	expect(replaceCall?.fileId).toBe(7);
-	expect(replaceCall?.chunks).toEqual([
+	assert.equal(replaceCall?.fileId, 7);
+	assert.deepEqual(replaceCall?.chunks, [
 		{ content: `${header}\n\nalpha`, embedding: [1, 0, 0], chunkIndex: 0 },
 		{ content: `${header}\n\nbeta`, embedding: [0, 1, 0], chunkIndex: 1 },
 		{ content: `${header}\n\ngamma`, embedding: [0, 0, 1], chunkIndex: 2 },
 	]);
 
 	// upsertFile receives the NEW hash, not the stale stored one.
-	expect(tracked.upsertFileCalls[0]?.contentHash).toBe(MATCHING_HASH);
+	assert.equal(tracked.upsertFileCalls[0]?.contentHash, MATCHING_HASH);
 });
 
 test("empty chunks[] → still upserts and calls replaceFileChunks with []", async () => {
@@ -233,10 +234,10 @@ test("empty chunks[] → still upserts and calls replaceFileChunks with []", asy
 
 	const result = await processLoadedFile(FILE_PATH, tracked.deps);
 
-	expect(result).toEqual({ status: "processed", chunkCount: 0 });
-	expect(tracked.chunkMarkdownCalls).toHaveLength(1);
-	expect(tracked.embedDocumentCalls).toHaveLength(0);
-	expect(tracked.upsertFileCalls).toHaveLength(1);
-	expect(tracked.replaceFileChunksCalls).toHaveLength(1);
-	expect(tracked.replaceFileChunksCalls[0]?.chunks).toEqual([]);
+	assert.deepEqual(result, { status: "processed", chunkCount: 0 });
+	assert.equal(tracked.chunkMarkdownCalls.length, 1);
+	assert.equal(tracked.embedDocumentCalls.length, 0);
+	assert.equal(tracked.upsertFileCalls.length, 1);
+	assert.equal(tracked.replaceFileChunksCalls.length, 1);
+	assert.deepEqual(tracked.replaceFileChunksCalls[0]?.chunks, []);
 });

@@ -293,7 +293,7 @@ dependency in this phase.
 
 ---
 
-## Phase 3: Migrate tests to `node:test` + `node:assert/strict` ⏳
+## Phase 3: Migrate tests to `node:test` + `node:assert/strict` ✅
 
 ### Overview
 
@@ -379,14 +379,14 @@ and document `engines.node: ">=24"` in Phase 4.
 
 ### Verification
 
-- [ ] `node --test --test-reporter=spec 'src/**/*.test.ts'` runs and all
+- [x] `node --test --test-reporter=spec 'src/**/*.test.ts'` runs and all
       tests pass (run from repo root, with `node_modules` still present
       from Bun install).
-- [ ] `node --test --test-reporter=spec 'bench/**/*.test.ts'` runs and
+- [x] `node --test --test-reporter=spec 'bench/**/*.test.ts'` runs and
       passes (note: `bench/retrieval.test.ts` requires the test DB to be
       populated; run `bun run testdata:reindex` first if needed).
-- [ ] `bun run check` passes end-to-end (Biome + tsc + `node --test`).
-- [ ] `rg -n "bun:test|expect\\(" src bench` returns **zero matches**.
+- [x] `bun run check` passes end-to-end (Biome + tsc + `node --test`).
+- [x] `rg -n "bun:test|expect\\(" src bench` returns **zero matches**.
 - [ ] `git add -A` then **stop**.
 
 > Pause after this phase for manual confirmation before proceeding.
