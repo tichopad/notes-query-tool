@@ -1,3 +1,9 @@
+> **Status: ARCHIVED.** This document describes a research effort to
+> ship the project as a single-file Bun executable via
+> `bun build --compile`. The project has since migrated to Node.js and
+> the approach below is no longer applicable. Retained for historical
+> reference only.
+
 # Bun Single-File Executable — Research & Rejection
 
 ## Goal

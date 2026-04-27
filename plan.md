@@ -537,7 +537,7 @@ Read the current file and append only what's missing.
 
 ---
 
-## Phase 5: Documentation cleanup ⏳
+## Phase 5: Documentation cleanup ✅
 
 ### Overview
 
@@ -590,10 +590,10 @@ stack. Mark the historical Bun-compile doc as archived. Final smoke check.
 
 ### Verification
 
-- [ ] `rg -n "\\bbun\\b" AGENTS.md README.md` returns no matches
+- [x] `rg -n "\\bbun\\b" AGENTS.md README.md` returns no matches
       (excluding inside the explicit "instead of `bun ...`" examples and
       the archived doc).
-- [ ] `pnpm run check` still passes.
+- [x] `pnpm run check` still passes.
 - [ ] Smoke run of full pipeline:
       `rm -rf dbdata && pnpm run db:migrate && pnpm run testdata:load && pnpm run dev query --vs "note" --fts "note"`
       produces results.

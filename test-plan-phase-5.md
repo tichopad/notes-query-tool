@@ -1,0 +1,5 @@
+- [x] `pnpm run dev load --glob 'testdata/**/*.md'` ingests notes without error
+- [x] `pnpm run dev query --vs "note" --fts "note"` returns results and writes `query_results.yaml`
+- [x] `query_results.yaml` is valid YAML with expected fields
+- [x] `pnpm run db:query "SELECT count(*) FROM chunks"` returns a non-zero row
+- [x] Full pipeline reset works: `rm -rf dbdata && pnpm run db:migrate && pnpm run testdata:load && pnpm run dev query --vs "note" --fts "note"`

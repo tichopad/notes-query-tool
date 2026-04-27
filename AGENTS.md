@@ -1,15 +1,14 @@
 This project is a CLI application for indexing and querying Markdown notes using a combination of different search algorithms.
-It's written in Bun.
+It uses Node.js (>=24) with native TypeScript type stripping, pnpm for dependency management, and the built-in `node:test` runner.
 
-Always default to using Bun instead of Node.js.
+Always use Node.js and pnpm. Do not use Bun.
 
-- Use `bun <file>` instead of `node <file>` or `ts-node <file>`
-- Use `bun test` instead of `jest` or `vitest`
-- Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
-- Use `bun install` instead of `npm install` or `yarn install` or `pnpm install`
-- Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
-- Use `bunx <package> <command>` instead of `npx <package> <command>`
-- Bun automatically loads .env, so don't use dotenv.
+- Use `node <file>` instead of `bun <file>` or `ts-node <file>`
+- Use `pnpm run test` instead of `jest`, `vitest`, or `bun test`
+- Use `pnpm install` instead of `npm install`, `yarn install`, or `bun install`
+- Use `pnpm run <script>` instead of `npm run <script>`, `yarn run <script>`, or `bun run <script>`
+- Use `pnpm exec <package> <command>` instead of `npx <package> <command>` or `bunx <package> <command>`
+- `.env` is **not** auto-loaded. If needed, run `node --env-file=.env <script>` (Node 20.6+).
 
 ## Test data dirs
 
@@ -21,36 +20,37 @@ Always default to using Bun instead of Node.js.
 
 ## APIs
 
-- `Bun.serve()` supports WebSockets, HTTPS, and routes. Don't use `express`.
-- `WebSocket` is built-in. Don't use `ws`.
-- Prefer `Bun.file` over `node:fs`'s readFile/writeFile
-- Bun.$`ls` instead of execa.
+- `WebSocket` is a global in Node 22+. Don't use `ws`.
+- Use `node:fs/promises` (`readFile`, `writeFile`, `unlink`) for file I/O.
+- Use `node:crypto` (`createHash`) for hashing.
+- Use the `yaml` package for YAML parsing/serialisation.
 
 ## Testing
 
-Use `bun test` to run tests.
+Use `pnpm run test` (runs `node --test`) to run tests.
 
-```ts#index.test.ts
-import { test, expect } from "bun:test";
+```ts
+import { test, describe } from "node:test";
+import assert from "node:assert/strict";
 
 test("hello world", () => {
-  expect(1).toBe(1);
+  assert.equal(1, 1);
 });
 ```
 
 ## Database
 
 - Use PGLite via Drizzle
-- In case of issues with a stale lock (e.g. process didn't close correctly), run `bun db:delete-stale-lock`
+- In case of issues with a stale lock (e.g. process didn't close correctly), run `pnpm run db:delete-stale-lock`
 
 ### Ad-hoc SQL queries
 
 Run arbitrary SQL against the local PGLite DB (in `./dbdata/`):
 
 ```bash
-bun db:query "SELECT id, path FROM notes LIMIT 5"
+pnpm run db:query "SELECT id, path FROM notes LIMIT 5"
 # or via stdin
-bun db:query <<'SQL'
+pnpm run db:query <<'SQL'
 SELECT count(*) FROM chunks;
 SQL
 ```
@@ -59,4 +59,4 @@ Output is terse TSV designed for agents/scripts. Vector columns are abbreviated.
 
 ## Changes verification
 
-Run `bun run fix && bun run check` after changes to verify them.
+Run `pnpm run fix && pnpm run check` after changes to verify them.

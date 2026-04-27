@@ -1,10 +1,12 @@
 # notes-query-tool
 
+**Prerequisites:** Node.js >= 24, pnpm >= 10
+
 Load and index notes:
-`bun dev load --glob "testdata/**/*.md"`
+`pnpm run dev load --glob "testdata/**/*.md"`
 
 Query notes:
-`bun dev query --vector/-vs <semantic query> --fulltext/-fts <keyword query>`
+`pnpm run dev query --vector/-vs <semantic query> --fulltext/-fts <keyword query>`
 
 Both flags are required.
 
@@ -26,8 +28,8 @@ If you need to reset the database (e.g. after schema migrations), run:
 
 ```bash
 rm -rf dbdata/
-bun run db:migrate
-bun dev load --glob 'notes/**/*.md'
+pnpm run db:migrate
+pnpm run dev load --glob 'notes/**/*.md'
 ```
 
 ## Development
@@ -37,9 +39,9 @@ bun dev load --glob 'notes/**/*.md'
 Run arbitrary SQL against the local PGLite DB (in `./dbdata/`):
 
 ```bash
-bun db:query "SELECT id, path FROM notes LIMIT 5"
+pnpm run db:query "SELECT id, path FROM notes LIMIT 5"
 # or via stdin
-bun db:query <<'SQL'
+pnpm run db:query <<'SQL'
 SELECT count(*) FROM chunks;
 SQL
 ```
@@ -50,11 +52,11 @@ Output is terse TSV designed for agents/scripts. Vector columns are abbreviated.
 
 ```sh
 # Full flags
-bun dev query --vector "Who is my girlfriend and what does she like?" --fulltext "girlfriend interests hobbies"
+pnpm run dev query --vector "Who is my girlfriend and what does she like?" --fulltext "girlfriend interests hobbies"
 
 # Short aliases
-bun dev query -vs "What are my long-term career goals?" -fts "career goals plans"
+pnpm run dev query -vs "What are my long-term career goals?" -fts "career goals plans"
 
 # Mixed
-bun dev query --vector "Summarize my thoughts on stoicism" -fts "stoicism notes"
+pnpm run dev query --vector "Summarize my thoughts on stoicism" -fts "stoicism notes"
 ```
