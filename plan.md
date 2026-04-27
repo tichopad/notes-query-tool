@@ -393,7 +393,7 @@ and document `engines.node: ">=24"` in Phase 4.
 
 ---
 
-## Phase 4: Package manager cutover (Bun → pnpm) ⏳
+## Phase 4: Package manager cutover (Bun → pnpm) ✅
 
 ### Overview
 
@@ -519,11 +519,11 @@ Read the current file and append only what's missing.
 
 ### Verification
 
-- [ ] `pnpm install` succeeds, produces `pnpm-lock.yaml`, applies the
+- [x] `pnpm install` succeeds, produces `pnpm-lock.yaml`, applies the
       drizzle-kit patch (no warnings about unapplied patches).
-- [ ] `node_modules/drizzle-kit/bin.cjs` contains the patched lines
+- [x] `node_modules/drizzle-kit/bin.cjs` contains the patched lines
       (grep for `@electric-sql/pglite/vector`).
-- [ ] `pnpm run check` passes (Biome + tsc + tests).
+- [x] `pnpm run check` passes (Biome + tsc + tests).
 - [ ] `pnpm run db:migrate` against a clean `rm -rf dbdata && pnpm run db:migrate`.
 - [ ] `pnpm run testdata:load` succeeds.
 - [ ] `pnpm run dev query --vs "test" --fts "test"` produces output.

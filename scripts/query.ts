@@ -72,7 +72,7 @@ if (process.argv[2]) {
 
 if (!sql) {
 	process.stderr.write(
-		'usage: bun db:query "<SQL>"\n       echo "<SQL>" | bun db:query\n',
+		'usage: pnpm db:query "<SQL>"\n       echo "<SQL>" | pnpm db:query\n',
 	);
 	process.exit(1);
 }

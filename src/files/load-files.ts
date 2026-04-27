@@ -1,7 +1,7 @@
-import { Glob } from "bun";
+import { glob } from "node:fs/promises";
 
-export function loadFilesByGlob(globPattern: string): AsyncIterable<string> {
-	const glob = new Glob(globPattern);
-
-	return glob.scan({ onlyFiles: true, dot: false, absolute: false });
+export async function* loadFilesByGlob(
+	globPattern: string,
+): AsyncIterable<string> {
+	yield* glob(globPattern, { exclude: (f) => f.startsWith(".") });
 }
