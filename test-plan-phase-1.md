@@ -1,3 +1,0 @@
-- [x] `bun run dev --help` prints usage without error
-- [x] `bun run dev load --glob 'testdata/**/*.md'` completes without runtime import errors
-- [x] `bun run dev query --vs "test" --fts "test"` produces output without errors

@@ -1,5 +1,0 @@
-- [x] `bun run dev load --glob 'testdata/**/*.md'` completes without error and shows files processed
-- [x] `bun run dev query --vs "anything" --fts "anything"` produces results output
-- [x] `query_results.yaml` is written and contains valid YAML after the query above
-- [x] `bun run db:migrate` succeeds (run against a clean `dbdata/` if needed)
-- [x] `bun run dev --help` runs without error

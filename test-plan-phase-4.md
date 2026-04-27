@@ -1,5 +1,0 @@
-- [x] `pnpm run db:migrate` succeeds against a clean `rm -rf dbdata/`
-- [x] `pnpm run testdata:load` ingests test fixtures without errors
-- [x] `pnpm run dev query --vs "test" --fts "test"` produces output and writes `query_results.yaml`
-- [x] `pnpm run db:query "SELECT count(*) FROM chunks"` returns a row
-- [x] `pnpm run dev --help` prints usage without error
