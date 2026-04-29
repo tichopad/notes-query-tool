@@ -6,6 +6,7 @@
 		"node": ">=24"
 	},
 	"packageManager": "pnpm@10.32.1",
+	"main": "src/main.ts",
 	"scripts": {
 		"db:delete-stale-lock": "rm ./dbdata/postmaster.pid",
 		"db:generate": "drizzle-kit generate",
