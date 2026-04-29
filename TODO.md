@@ -1,6 +1,6 @@
 # TODO
 
-- [ ] Synthetic bench data
+- [x] Synthetic bench data
 - [ ] General cleanup
 - [ ] Improve indexing time
 - [ ] Allow remote embedding models

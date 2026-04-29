@@ -6,11 +6,11 @@ Load and index notes:
 `pnpm run dev load --glob "testdata/**/*.md"`
 
 Query notes:
-`pnpm run dev query --vector/-vs <semantic query> --fulltext/-fts <keyword query>`
+`pnpm run dev query --vector/-v <semantic query> --fulltext/-f <keyword query>`
 
 Both flags are required.
 
-An optional `--trigram-mode` / `-tg` flag selects the trigram operator: `strict` (default, uses `strict_word_similarity`) or `word` (uses `word_similarity`).
+An optional `--trigram-mode` / `-t` flag selects the trigram operator: `strict` (default, uses `strict_word_similarity`) or `word` (uses `word_similarity`).
 
 ## Search channels
 
@@ -55,8 +55,8 @@ Output is terse TSV designed for agents/scripts. Vector columns are abbreviated.
 pnpm run dev query --vector "Who is my girlfriend and what does she like?" --fulltext "girlfriend interests hobbies"
 
 # Short aliases
-pnpm run dev query -vs "What are my long-term career goals?" -fts "career goals plans"
+pnpm run dev query -v "What are my long-term career goals?" -f "career goals plans"
 
 # Mixed
-pnpm run dev query --vector "Summarize my thoughts on stoicism" -fts "stoicism notes"
+pnpm run dev query --vector "Summarize my thoughts on stoicism" -f "stoicism notes"
 ```

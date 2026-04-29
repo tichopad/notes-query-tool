@@ -12,19 +12,19 @@ export const queryCommand = defineCommand({
 	args: {
 		vector: {
 			type: "string",
-			alias: "vs",
+			alias: "v",
 			description: "Semantic query for vector search",
 			required: true,
 		},
 		fulltext: {
 			type: "string",
-			alias: "fts",
+			alias: "f",
 			description: "Keyword query for full-text search",
 			required: true,
 		},
 		trigramMode: {
 			type: "string",
-			alias: "tg",
+			alias: "t",
 			description:
 				"Trigram operator: 'strict' (strict_word_similarity, <<%) or 'word' (word_similarity, <%)",
 			default: "strict",
