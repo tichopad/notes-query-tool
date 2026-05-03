@@ -8,7 +8,7 @@ import {
 	timestamp,
 	vector,
 } from "drizzle-orm/pg-core";
-import { EMBEDDING_DIMS } from "../../embedder.ts";
+import { EMBEDDING_DIMS } from "../../config.ts";
 import { filesTable } from "./files.ts";
 
 const tsvector = customType<{ data: string }>({

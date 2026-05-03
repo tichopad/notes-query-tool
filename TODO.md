@@ -2,9 +2,11 @@
 
 - [x] Synthetic bench data
 - [ ] General cleanup
+- [ ] Add user-facing loading state (e.g. model downloading, DB migrating, data indexing)
+- [ ] Centralize caching to node_modules/.cache/notes-query-tool
+- [ ] Distribute on NPM
 - [ ] Improve indexing time
 - [ ] Allow remote embedding models
-- [ ] Distribute on NPM
 - [ ] Fix short flags not working
 
 # Maybes

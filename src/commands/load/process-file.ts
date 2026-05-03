@@ -1,4 +1,5 @@
 import path from "node:path";
+import { CHUNK_LIMIT_CHARS } from "../../config.ts";
 import type { Chunk } from "../../files/chunker.ts";
 import { extractFrontmatter } from "../../files/frontmatter.ts";
 import { decideFileProcessing } from "./decide-file-processing.ts";
@@ -8,8 +9,6 @@ export type FileLoadResult = {
 	status: "skipped" | "processed";
 	chunkCount: number;
 };
-
-const CHUNK_LIMIT_CHARS = 2000;
 
 export type LoadRepositoryLike = {
 	getFileProcessingState(filePath: string): Promise<FileProcessingState>;

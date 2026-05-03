@@ -1,20 +1,20 @@
 import path from "node:path";
 import { cosineDistance, desc, eq, gt, sql } from "drizzle-orm";
+import {
+	FTS_LIMIT,
+	FTS_WEIGHT,
+	LINK_BOOST,
+	LINK_BOOST_CAP,
+	LINK_SOURCE_TOP_N,
+	TRIGRAM_LIMIT,
+	TRIGRAM_THRESHOLD,
+	TRIGRAM_WEIGHT,
+	VECTOR_LIMIT,
+	VECTOR_WEIGHT,
+} from "../config.ts";
 import { db } from "../database/client.ts";
 import { chunksTable } from "../database/schema/chunks.ts";
 import { filesTable } from "../database/schema/files.ts";
-
-const VECTOR_WEIGHT = 0.3;
-const VECTOR_LIMIT = 30;
-const FTS_WEIGHT = 0.4;
-const FTS_LIMIT = 20;
-const TRIGRAM_WEIGHT = 0.3;
-const TRIGRAM_THRESHOLD = 0.3;
-const TRIGRAM_LIMIT = 20;
-
-const LINK_BOOST = 0.2;
-const LINK_BOOST_CAP = 0.4;
-const LINK_SOURCE_TOP_N = 10;
 
 function extractWikilinks(content: string): string[] {
 	const re = /\[\[([^\]|#]+)(?:[|#][^\]]*)?\]\]/g;

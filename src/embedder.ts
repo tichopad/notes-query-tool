@@ -2,11 +2,7 @@ import {
 	type FeatureExtractionPipeline,
 	pipeline,
 } from "@huggingface/transformers";
-
-// export const MODEL_ID = "onnx-community/Qwen3-Embedding-0.6B-ONNX";
-export const MODEL_ID = "onnx-community/embeddinggemma-300m-ONNX";
-export const MODEL_DTYPE = "fp32";
-export const EMBEDDING_DIMS = 768;
+import { MODEL_DTYPE, MODEL_ID } from "./config.ts";
 
 /**
  * Loads the feature-extraction pipeline on the given device.
