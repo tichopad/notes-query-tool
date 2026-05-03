@@ -10,7 +10,6 @@
 	"scripts": {
 		"db:delete-stale-lock": "rm ./dbdata/postmaster.pid",
 		"db:generate": "drizzle-kit generate",
-		"db:migrate": "node scripts/migrate.ts",
 		"db:query": "node scripts/query.ts",
 		"db:push": "drizzle-kit push",
 		"db:studio": "drizzle-kit studio",

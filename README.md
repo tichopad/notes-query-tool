@@ -28,7 +28,6 @@ If you need to reset the database (e.g. after schema migrations), run:
 
 ```bash
 rm -rf dbdata/
-pnpm run db:migrate
 pnpm run dev load --glob 'notes/**/*.md'
 ```
 

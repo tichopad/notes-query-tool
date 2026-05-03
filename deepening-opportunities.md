@@ -4,15 +4,6 @@ Identified during architecture review (2026-05-03).
 
 ---
 
-## 1. `EMBEDDING_DIMS` coupling: `embedder.ts` → `database/schema/chunks.ts`
-
-- **Files:** `src/embedder.ts`, `src/database/schema/chunks.ts`
-- **Problem:** Schema imports a model constant. Schema migration needed when model changes, but no guard links them. Changing model = touching unrelated module.
-- **Solution:** Move `EMBEDDING_DIMS` (and `MODEL_ID`, `MODEL_DTYPE`) to a shared `src/config.ts`. Schema and embedder both read from there.
-- **Benefits:** Locality — model config in one place. Schema stays purely declarative.
-
----
-
 ## 2. `db` singleton: no seam at DB connection level
 
 - **Files:** `src/database/client.ts`, `src/commands/load/load-repository.ts`, `src/query/execute.ts`, `scripts/migrate.ts`, `scripts/query.ts`
