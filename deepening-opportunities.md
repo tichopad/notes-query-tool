@@ -4,15 +4,6 @@ Identified during architecture review (2026-05-03).
 
 ---
 
-## 2. `db` singleton: no seam at DB connection level
-
-- **Files:** `src/database/client.ts`, `src/commands/load/load-repository.ts`, `src/query/execute.ts`, `scripts/migrate.ts`, `scripts/query.ts`
-- **Problem:** Extension list duplicated in 3 places. `DbLoadRepository` and `executeQuery` import `db` directly — untestable without patching modules. Hardcoded `./dbdata/` path.
-- **Solution:** `createDbClient(path?)` factory instead of module-level singleton. Extension list defined once. `DbLoadRepository` and `executeQuery` accept `db` as a param (or via the DI already present).
-- **Benefits:** Real seam — integration tests can pass in-memory DB. Locality for extension config.
-
----
-
 ## 3. `executeQuery` monolith: score fusion + re-ranking untestable
 
 - **Files:** `src/query/execute.ts`

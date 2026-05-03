@@ -4,6 +4,7 @@ import { queryCommand } from "./commands/query.ts";
 import { db } from "./database/client.ts";
 import { runMigrations } from "./database/migrate.ts";
 
+// Setup DB and register subcommands
 const main = defineCommand({
 	meta: {
 		name: "notes-query-tool",
@@ -11,29 +12,40 @@ const main = defineCommand({
 		description: "Notes query tool (think of a better description later)",
 	},
 	subCommands: {
+		// Handles loading notes, chunking and indexing them in the database
 		load: loadCommand,
+		// Handles querying the indexed notes
 		query: queryCommand,
 	},
+	// Runs before any subcommand
 	async setup() {
 		await db.$client.waitReady;
 		await runMigrations(db);
 	},
+	// Runs after the subcommand finishes
 	async cleanup() {
 		await db.$client.close();
 	},
 });
 
-await runMain(main);
+// Run the handler
+await runMain(main).catch((error) => {
+	closeDbAndExit(`Error: ${error}`, 1);
+});
 
+// Global error handlers to ensure DB connection is closed on unexpected errors or termination
+// Not closing the connection properly can lead to issues like locked database files
 process.on("unhandledRejection", (reason) => {
-	console.error("Unhandled Rejection:", reason);
-	db.$client.close().finally(() => process.exit(1));
+	closeDbAndExit(`Unhandled Rejection: ${reason}`, 1);
 });
 process.on("uncaughtException", (error) => {
-	console.error("Uncaught Exception:", error);
-	db.$client.close().finally(() => process.exit(1));
+	closeDbAndExit(`Uncaught Exception: ${error}`, 1);
 });
 process.on("SIGINT", () => {
-	console.log("Received SIGINT, shutting down...");
-	db.$client.close().finally(() => process.exit(0));
+	closeDbAndExit("Received SIGINT, shutting down...", 0);
 });
+
+function closeDbAndExit(message: string, code: number) {
+	console.log(message);
+	db.$client.close().finally(() => process.exit(code));
+}

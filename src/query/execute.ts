@@ -1,11 +1,7 @@
-import path from "node:path";
 import { cosineDistance, desc, eq, gt, sql } from "drizzle-orm";
 import {
 	FTS_LIMIT,
 	FTS_WEIGHT,
-	LINK_BOOST,
-	LINK_BOOST_CAP,
-	LINK_SOURCE_TOP_N,
 	TRIGRAM_LIMIT,
 	TRIGRAM_THRESHOLD,
 	TRIGRAM_WEIGHT,
@@ -15,39 +11,57 @@ import {
 import { db as defaultDb, type PgliteDatabase } from "../database/client.ts";
 import { chunksTable } from "../database/schema/chunks.ts";
 import { filesTable } from "../database/schema/files.ts";
+import { fuseScores, poolByFile, rerankByWikilinks } from "./scoring.ts";
 
-function extractWikilinks(content: string): string[] {
-	const re = /\[\[([^\]|#]+)(?:[|#][^\]]*)?\]\]/g;
-	const seen = new Set<string>();
-	let m: RegExpExecArray | null = re.exec(content);
-	while (m !== null) {
-		if (m[1] !== undefined) seen.add(m[1].trim());
-		m = re.exec(content);
-	}
-	return [...seen];
-}
-
+/** A single ranked chunk result returned by {@link executeQuery}. */
 export type QueryResult = {
+	/** Database row ID of the chunk. */
 	id: number;
+	/** Relative file path of the note the chunk belongs to. */
 	filePath: string;
+	/** Zero-based position of this chunk within its file. */
 	chunkIndex: number;
+	/** Ordered list of heading ancestors that provide context for the chunk. */
 	breadcrumbs: string[];
+	/** Raw markdown text of the chunk. */
 	content: string;
+	/** Final fused relevance score after reranking (higher is better). */
 	score: number;
 };
 
+/**
+ * Options accepted by {@link executeQuery}.
+ */
 export type ExecuteQueryOpts = {
+	/** Text to embed for the vector similarity search leg. */
 	vectorText: string;
+	/** Raw query string used for FTS and trigram search legs. */
 	queryText: string;
+	/** Function that converts a string into a dense embedding vector. */
 	embedQuery: (text: string) => Promise<number[]>;
+	/** Database instance to query; defaults to the shared PGLite client. */
 	db?: PgliteDatabase;
+	/** Per-leg score weights used when fusing results. */
 	weights?: { vector: number; fts: number; trigram: number };
+	/** Maximum number of candidate rows fetched from each search leg. */
 	limits?: { vector: number; fts: number; trigram: number };
+	/** Minimum trigram similarity threshold (passed to `set_limit`). */
 	trigramThreshold?: number;
+	/** Trigram operator variant: `"strict"` uses `<<%`, `"word"` uses `<%`. */
 	trigramMode?: "strict" | "word";
+	/** Maximum number of results to return after pooling by file. */
 	topK?: number;
 };
 
+/**
+ * Execute a hybrid search query against the notes database.
+ *
+ * Runs three search legs in parallel — vector similarity, full-text search
+ * (FTS), and trigram matching — then fuses their scores, reranks by wikilink
+ * connectivity, and pools the top results by source file.
+ *
+ * @returns Ranked list of {@link QueryResult} chunks, at most `topK` entries.
+ */
 export async function executeQuery(
 	opts: ExecuteQueryOpts,
 ): Promise<QueryResult[]> {
@@ -136,102 +150,14 @@ export async function executeQuery(
 		}),
 	]);
 
-	const maxSimilarity = Math.max(
-		...vectorResults.map((r) => r.similarity),
-		1e-9,
-	);
-	const maxRank = Math.max(...ftsResults.map((r) => r.rank), 1e-9);
-	const maxTrigram = Math.max(...trigramResults.map((r) => r.score), 1e-9);
-
-	const merged = new Map<number, QueryResult>();
-
-	for (const r of vectorResults) {
-		merged.set(r.id, {
-			...r,
-			score: (r.similarity / maxSimilarity) * weights.vector,
-		});
-	}
-
-	for (const r of ftsResults) {
-		const ftsScore = (r.rank / maxRank) * weights.fts;
-		const existing = merged.get(r.id);
-		if (existing) {
-			existing.score += ftsScore;
-		} else {
-			merged.set(r.id, { ...r, score: ftsScore });
-		}
-	}
-
-	for (const r of trigramResults) {
-		const tgScore = (r.score / maxTrigram) * weights.trigram;
-		const existing = merged.get(r.id);
-		if (existing) {
-			existing.score += tgScore;
-		} else {
-			merged.set(r.id, { ...r, score: tgScore });
-		}
-	}
-
-	// Wikilink-aware re-ranking: boost files referenced by top source chunks
 	const allFiles = await db
-		.select({ id: filesTable.id, filePath: filesTable.filePath })
+		.select({ filePath: filesTable.filePath })
 		.from(filesTable);
-	const basenameToFilePaths = new Map<string, Set<string>>();
-	for (const f of allFiles) {
-		const base = path.basename(f.filePath, ".md");
-		if (!basenameToFilePaths.has(base)) {
-			basenameToFilePaths.set(base, new Set());
-		}
-		basenameToFilePaths.get(base)?.add(f.filePath);
-	}
 
-	const filePathsInResults = new Set<string>(
-		[...merged.values()].map((r) => r.filePath),
+	const fused = fuseScores(vectorResults, ftsResults, trigramResults, weights);
+	const reranked = rerankByWikilinks(
+		fused,
+		allFiles.map((f) => f.filePath),
 	);
-
-	const topSources = [...merged.values()]
-		.sort((a, b) => b.score - a.score)
-		.slice(0, LINK_SOURCE_TOP_N);
-
-	const boosts = new Map<string, number>();
-	for (const src of topSources) {
-		const links = extractWikilinks(src.content);
-		for (const link of links) {
-			const targets = basenameToFilePaths.get(link);
-			if (!targets) continue;
-			for (const fp of targets) {
-				if (fp === src.filePath) continue;
-				if (!filePathsInResults.has(fp)) continue;
-				const prev = boosts.get(fp) ?? 0;
-				boosts.set(fp, Math.min(prev + LINK_BOOST * src.score, LINK_BOOST_CAP));
-			}
-		}
-	}
-
-	for (const chunk of merged.values()) {
-		const boost = boosts.get(chunk.filePath);
-		if (boost) chunk.score += boost;
-	}
-
-	// Per-file max-pool: keep best chunk per file, small bonus for breadth
-	const byFile = new Map<
-		string,
-		{ result: QueryResult; extraChunks: number }
-	>();
-	for (const result of merged.values()) {
-		const existing = byFile.get(result.filePath);
-		if (!existing || result.score > existing.result.score) {
-			byFile.set(result.filePath, {
-				result,
-				extraChunks: existing ? existing.extraChunks + 1 : 0,
-			});
-		} else {
-			existing.extraChunks++;
-		}
-	}
-
-	return [...byFile.values()]
-		.map(({ result }) => result)
-		.sort((a, b) => b.score - a.score)
-		.slice(0, topK);
+	return poolByFile(reranked, topK);
 }
