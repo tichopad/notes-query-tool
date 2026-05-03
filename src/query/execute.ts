@@ -12,7 +12,7 @@ import {
 	VECTOR_LIMIT,
 	VECTOR_WEIGHT,
 } from "../config.ts";
-import { db } from "../database/client.ts";
+import { db as defaultDb, type PgliteDatabase } from "../database/client.ts";
 import { chunksTable } from "../database/schema/chunks.ts";
 import { filesTable } from "../database/schema/files.ts";
 
@@ -40,6 +40,7 @@ export type ExecuteQueryOpts = {
 	vectorText: string;
 	queryText: string;
 	embedQuery: (text: string) => Promise<number[]>;
+	db?: PgliteDatabase;
 	weights?: { vector: number; fts: number; trigram: number };
 	limits?: { vector: number; fts: number; trigram: number };
 	trigramThreshold?: number;
@@ -54,6 +55,7 @@ export async function executeQuery(
 		vectorText,
 		queryText,
 		embedQuery,
+		db = defaultDb,
 		weights = {
 			vector: VECTOR_WEIGHT,
 			fts: FTS_WEIGHT,

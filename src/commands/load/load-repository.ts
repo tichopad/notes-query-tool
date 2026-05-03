@@ -1,5 +1,5 @@
 import { and, count, eq, isNotNull, sql } from "drizzle-orm";
-import { db } from "../../database/client.ts";
+import { db as defaultDb, type PgliteDatabase } from "../../database/client.ts";
 import { chunksTable, type NewChunk } from "../../database/schema/chunks.ts";
 import { filesTable } from "../../database/schema/files.ts";
 
@@ -24,8 +24,14 @@ export interface LoadRepository {
 }
 
 export class DbLoadRepository implements LoadRepository {
+	private readonly db: PgliteDatabase;
+
+	constructor(db: PgliteDatabase = defaultDb) {
+		this.db = db;
+	}
+
 	async getFileProcessingState(filePath: string): Promise<FileProcessingState> {
-		const [file] = await db
+		const [file] = await this.db
 			.select({ id: filesTable.id, contentHash: filesTable.contentHash })
 			.from(filesTable)
 			.where(eq(filesTable.filePath, filePath))
@@ -35,12 +41,12 @@ export class DbLoadRepository implements LoadRepository {
 			return null;
 		}
 
-		const [totalResult] = await db
+		const [totalResult] = await this.db
 			.select({ total: count() })
 			.from(chunksTable)
 			.where(eq(chunksTable.fileId, file.id));
 
-		const [withEmbeddingResult] = await db
+		const [withEmbeddingResult] = await this.db
 			.select({ withEmbedding: count() })
 			.from(chunksTable)
 			.where(
@@ -69,7 +75,7 @@ export class DbLoadRepository implements LoadRepository {
 			attributes.title = title;
 		}
 
-		const [file] = await db
+		const [file] = await this.db
 			.insert(filesTable)
 			.values({ filePath, contentHash, attributes })
 			.onConflictDoUpdate({
@@ -93,7 +99,7 @@ export class DbLoadRepository implements LoadRepository {
 		fileId: number,
 		chunks: Array<{ content: string; embedding: number[]; chunkIndex: number }>,
 	): Promise<void> {
-		await db.transaction(async (tx) => {
+		await this.db.transaction(async (tx) => {
 			await tx.delete(chunksTable).where(eq(chunksTable.fileId, fileId));
 
 			if (chunks.length > 0) {

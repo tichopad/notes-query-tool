@@ -1,8 +1,6 @@
 import { PGlite } from "@electric-sql/pglite";
-import { pg_trgm } from "@electric-sql/pglite/contrib/pg_trgm";
-import { unaccent } from "@electric-sql/pglite/contrib/unaccent";
-import { vector } from "@electric-sql/pglite/vector";
 import { DB_DATA_DIR } from "../src/config.ts";
+import { DB_EXTENSIONS } from "../src/database/client.ts";
 
 const ROW_CAP = Number(process.env.DB_QUERY_LIMIT ?? 200);
 const CELL_MAX = 200;
@@ -81,7 +79,7 @@ if (!sql) {
 // --- run ---
 const pglite = new PGlite({
 	dataDir: DB_DATA_DIR,
-	extensions: { unaccent, vector, pg_trgm },
+	extensions: DB_EXTENSIONS,
 });
 
 try {
