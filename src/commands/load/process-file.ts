@@ -2,6 +2,7 @@ import path from "node:path";
 import { CHUNK_LIMIT_CHARS } from "../../config.ts";
 import type { Chunk } from "../../files/chunker.ts";
 import { extractFrontmatter } from "../../files/frontmatter.ts";
+import { buildDocumentHeader } from "./build-document-header.ts";
 import { decideFileProcessing } from "./decide-file-processing.ts";
 import type { LoadRepository } from "./load-repository.ts";
 
@@ -39,36 +40,13 @@ export async function processLoadedFile(
 
 	const { attributes, body } = extractFrontmatter(content);
 
-	// Build header prefix: filename + path + optional frontmatter fields
 	const basename = path.basename(filePath, ".md");
 	const parentDir = path.basename(path.dirname(filePath));
-	const headerLines = [`File: ${basename}`, `Path: ${parentDir}`];
-	if (attributes) {
-		const title = attributes.title;
-		if (typeof title === "string" && title) headerLines.push(`Title: ${title}`);
-		const aliases = attributes.aliases;
-		if (Array.isArray(aliases) && aliases.length > 0)
-			headerLines.push(`Aliases: ${aliases.join(", ")}`);
-		const tags = attributes.tags;
-		if (Array.isArray(tags) && tags.length > 0)
-			headerLines.push(`Tags: ${tags.join(", ")}`);
-	}
-	const headerPrefix = headerLines.join("\n");
-
-	// Build titleString for embedDocument's title slot (basename + frontmatter fields)
-	const titleParts: string[] = [basename];
-	if (attributes) {
-		const fmTitle = attributes.title;
-		if (typeof fmTitle === "string" && fmTitle && fmTitle !== basename)
-			titleParts.push(fmTitle);
-		const aliases = attributes.aliases;
-		if (Array.isArray(aliases) && aliases.length > 0)
-			titleParts.push(`aliases: ${aliases.join(", ")}`);
-		const tags = attributes.tags;
-		if (Array.isArray(tags) && tags.length > 0)
-			titleParts.push(`tags: ${tags.join(", ")}`);
-	}
-	const titleString = titleParts.join("; ");
+	const { headerPrefix, titleString } = buildDocumentHeader(
+		basename,
+		parentDir,
+		attributes,
+	);
 
 	const chunks = chunkMarkdown(body || content, CHUNK_LIMIT_CHARS);
 

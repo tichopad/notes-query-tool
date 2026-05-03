@@ -23,7 +23,17 @@ type UpsertFileCall = {
 };
 type ReplaceFileChunksCall = {
 	fileId: number;
-	chunks: Array<{ content: string; embedding: number[]; chunkIndex: number }>;
+	chunks: Array<{
+		content: string;
+		embedding: number[];
+		chunkIndex: number;
+		breadcrumbs: string[];
+	}>;
+};
+
+type EmbedDocumentCall = {
+	body: string;
+	title: string | null | undefined;
 };
 
 type TrackedDeps = {
@@ -31,7 +41,7 @@ type TrackedDeps = {
 	chunkMarkdownCalls: ChunkMarkdownCall[];
 	upsertFileCalls: UpsertFileCall[];
 	replaceFileChunksCalls: ReplaceFileChunksCall[];
-	embedDocumentCalls: string[];
+	embedDocumentCalls: EmbedDocumentCall[];
 };
 
 type MakeDepsOverrides = {
@@ -48,7 +58,7 @@ function makeDeps(overrides: MakeDepsOverrides = {}): TrackedDeps {
 	const chunkMarkdownCalls: ChunkMarkdownCall[] = [];
 	const upsertFileCalls: UpsertFileCall[] = [];
 	const replaceFileChunksCalls: ReplaceFileChunksCall[] = [];
-	const embedDocumentCalls: string[] = [];
+	const embedDocumentCalls: EmbedDocumentCall[] = [];
 
 	const state = overrides.state ?? null;
 	const upsertFileId = overrides.upsertFileId ?? NEW_FILE_ID;
@@ -78,7 +88,7 @@ function makeDeps(overrides: MakeDepsOverrides = {}): TrackedDeps {
 			return chunkMarkdown(content, ...args);
 		},
 		embedDocument: async (body, title) => {
-			embedDocumentCalls.push(body);
+			embedDocumentCalls.push({ body, title });
 			return embedDocument(body, title);
 		},
 		log: overrides.log ?? (() => {}),
@@ -94,9 +104,20 @@ function makeDeps(overrides: MakeDepsOverrides = {}): TrackedDeps {
 }
 
 test("new file (state=null) → chunks, embeds, upserts, replaces with correct payload", async () => {
+	const content = `---
+title: My Note
+aliases:
+  - Alias One
+tags:
+  - tag-a
+---
+# Hello
+
+Some content here.`;
 	const chunks = [makeChunk("first chunk"), makeChunk("second chunk")];
 	const tracked = makeDeps({
 		state: null,
+		readText: async () => content,
 		chunkMarkdown: () => chunks,
 		embedDocument: async (body) => [body.length, 0],
 	});
@@ -107,7 +128,10 @@ test("new file (state=null) → chunks, embeds, upserts, replaces with correct p
 
 	// chunkMarkdown called once with body (frontmatter stripped) + size 2000
 	assert.equal(tracked.chunkMarkdownCalls.length, 1);
-	assert.equal(tracked.chunkMarkdownCalls[0]?.content, FAKE_CONTENT); // no frontmatter → body == content
+	assert.equal(
+		tracked.chunkMarkdownCalls[0]?.content,
+		"# Hello\n\nSome content here.",
+	);
 	assert.deepEqual(tracked.chunkMarkdownCalls[0]?.args, [2000]);
 
 	// upsertFile called once with the right args
@@ -118,11 +142,21 @@ test("new file (state=null) → chunks, embeds, upserts, replaces with correct p
 	assert.equal(upsertCall?.title, null);
 	assert.ok(upsertCall?.updatedAt instanceof Date, "expected instanceof Date");
 
-	// embedDocument called per chunk with bare chunk text (not augmented)
-	const header = "File: test\nPath: notes";
-	assert.deepEqual(tracked.embedDocumentCalls, ["first chunk", "second chunk"]);
+	// embedDocument called per chunk with bare chunk text + derived titleString
+	const header =
+		"File: test\nPath: notes\nTitle: My Note\nAliases: Alias One\nTags: tag-a";
+	assert.deepEqual(tracked.embedDocumentCalls, [
+		{
+			body: "first chunk",
+			title: "test; My Note; aliases: Alias One; tags: tag-a",
+		},
+		{
+			body: "second chunk",
+			title: "test; My Note; aliases: Alias One; tags: tag-a",
+		},
+	]);
 
-	// replaceFileChunks called once with fileId + ordered, paired chunks (augmented content stored, bare body embedded)
+	// replaceFileChunks stores augmented content with header metadata
 	assert.equal(tracked.replaceFileChunksCalls.length, 1);
 	const replaceCall = tracked.replaceFileChunksCalls[0];
 	assert.equal(replaceCall?.fileId, NEW_FILE_ID);
@@ -176,7 +210,9 @@ test("hash matches but no stored embeddings → reprocesses", async () => {
 
 	assert.deepEqual(result, { status: "processed", chunkCount: 1 });
 	assert.equal(tracked.chunkMarkdownCalls.length, 1);
-	assert.deepEqual(tracked.embedDocumentCalls, ["only"]);
+	assert.deepEqual(tracked.embedDocumentCalls, [
+		{ body: "only", title: "test" },
+	]);
 	assert.equal(tracked.upsertFileCalls.length, 1);
 	assert.equal(tracked.replaceFileChunksCalls.length, 1);
 });
