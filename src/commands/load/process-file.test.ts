@@ -131,11 +131,13 @@ test("new file (state=null) → chunks, embeds, upserts, replaces with correct p
 			content: `${header}\n\nfirst chunk`,
 			embedding: ["first chunk".length, 0],
 			chunkIndex: 0,
+			breadcrumbs: [],
 		},
 		{
 			content: `${header}\n\nsecond chunk`,
 			embedding: ["second chunk".length, 0],
 			chunkIndex: 1,
+			breadcrumbs: [],
 		},
 	]);
 });
@@ -213,9 +215,24 @@ test("hash changed → reprocess preserves chunk↔embedding pairing and chunkIn
 	const replaceCall = tracked.replaceFileChunksCalls[0];
 	assert.equal(replaceCall?.fileId, 7);
 	assert.deepEqual(replaceCall?.chunks, [
-		{ content: `${header}\n\nalpha`, embedding: [1, 0, 0], chunkIndex: 0 },
-		{ content: `${header}\n\nbeta`, embedding: [0, 1, 0], chunkIndex: 1 },
-		{ content: `${header}\n\ngamma`, embedding: [0, 0, 1], chunkIndex: 2 },
+		{
+			content: `${header}\n\nalpha`,
+			embedding: [1, 0, 0],
+			chunkIndex: 0,
+			breadcrumbs: [],
+		},
+		{
+			content: `${header}\n\nbeta`,
+			embedding: [0, 1, 0],
+			chunkIndex: 1,
+			breadcrumbs: [],
+		},
+		{
+			content: `${header}\n\ngamma`,
+			embedding: [0, 0, 1],
+			chunkIndex: 2,
+			breadcrumbs: [],
+		},
 	]);
 
 	// upsertFile receives the NEW hash, not the stale stored one.

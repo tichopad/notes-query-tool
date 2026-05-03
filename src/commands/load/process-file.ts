@@ -89,6 +89,7 @@ export async function processLoadedFile(
 					? await embedDocument(bodyText, titleString)
 					: await embedDocument(augmented, titleString),
 				chunkIndex: i,
+				breadcrumbs: chunk.breadcrumb,
 			};
 		}),
 	);

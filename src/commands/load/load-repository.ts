@@ -19,7 +19,12 @@ export interface LoadRepository {
 	): Promise<{ id: number }>;
 	replaceFileChunks(
 		fileId: number,
-		chunks: Array<{ content: string; embedding: number[]; chunkIndex: number }>,
+		chunks: Array<{
+			content: string;
+			embedding: number[];
+			chunkIndex: number;
+			breadcrumbs: string[];
+		}>,
 	): Promise<void>;
 }
 
@@ -97,7 +102,12 @@ export class DbLoadRepository implements LoadRepository {
 
 	async replaceFileChunks(
 		fileId: number,
-		chunks: Array<{ content: string; embedding: number[]; chunkIndex: number }>,
+		chunks: Array<{
+			content: string;
+			embedding: number[];
+			chunkIndex: number;
+			breadcrumbs: string[];
+		}>,
 	): Promise<void> {
 		await this.db.transaction(async (tx) => {
 			await tx.delete(chunksTable).where(eq(chunksTable.fileId, fileId));
@@ -109,7 +119,7 @@ export class DbLoadRepository implements LoadRepository {
 							fileId,
 							chunkIndex: chunk.chunkIndex,
 							content: chunk.content,
-							breadcrumbs: [] as string[],
+							breadcrumbs: chunk.breadcrumbs,
 							embedding: chunk.embedding,
 							fts: sql`to_tsvector('simple', unaccent(${chunk.content}))` as unknown as string,
 						}) satisfies NewChunk,
