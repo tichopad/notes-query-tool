@@ -3,29 +3,15 @@ import { CHUNK_LIMIT_CHARS } from "../../config.ts";
 import type { Chunk } from "../../files/chunker.ts";
 import { extractFrontmatter } from "../../files/frontmatter.ts";
 import { decideFileProcessing } from "./decide-file-processing.ts";
-import type { FileProcessingState } from "./load-repository.ts";
+import type { LoadRepository } from "./load-repository.ts";
 
 export type FileLoadResult = {
 	status: "skipped" | "processed";
 	chunkCount: number;
 };
 
-export type LoadRepositoryLike = {
-	getFileProcessingState(filePath: string): Promise<FileProcessingState>;
-	upsertFile(
-		filePath: string,
-		contentHash: string,
-		title: string | null,
-		updatedAt: Date,
-	): Promise<{ id: number }>;
-	replaceFileChunks(
-		fileId: number,
-		chunks: Array<{ content: string; embedding: number[]; chunkIndex: number }>,
-	): Promise<void>;
-};
-
 export type ProcessFileDeps = {
-	repo: LoadRepositoryLike;
+	repo: LoadRepository;
 	readText(filePath: string): Promise<string>;
 	hashContent(content: string): string;
 	chunkMarkdown(content: string, ...args: unknown[]): Chunk[];

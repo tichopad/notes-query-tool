@@ -1,12 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { Chunk } from "../../files/chunker.ts";
-import type { FileProcessingState } from "./load-repository.ts";
-import {
-	type LoadRepositoryLike,
-	type ProcessFileDeps,
-	processLoadedFile,
-} from "./process-file.ts";
+import type { FileProcessingState, LoadRepository } from "./load-repository.ts";
+import { type ProcessFileDeps, processLoadedFile } from "./process-file.ts";
 
 const FAKE_CONTENT = "# Hello\n\nSome content here.";
 const FILE_PATH = "notes/test.md";
@@ -57,7 +53,7 @@ function makeDeps(overrides: MakeDepsOverrides = {}): TrackedDeps {
 	const state = overrides.state ?? null;
 	const upsertFileId = overrides.upsertFileId ?? NEW_FILE_ID;
 
-	const repo: LoadRepositoryLike = {
+	const repo: LoadRepository = {
 		async getFileProcessingState(): Promise<FileProcessingState> {
 			return state;
 		},
