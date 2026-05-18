@@ -1,4 +1,4 @@
-import { and, count, eq, isNotNull, sql } from "drizzle-orm";
+import { count, eq, sql } from "drizzle-orm";
 import { db as defaultDb, type PgliteDatabase } from "../../database/client.ts";
 import { chunksTable, type NewChunk } from "../../database/schema/chunks.ts";
 import { filesTable } from "../../database/schema/files.ts";
@@ -46,20 +46,18 @@ export class DbLoadRepository implements LoadRepository {
 			return null;
 		}
 
-		const [totalResult] = await this.db
-			.select({ total: count() })
+		const [chunkResult] = await this.db
+			.select({
+				total: count(),
+				withEmbedding: count(
+					sql`CASE WHEN ${chunksTable.embedding} IS NOT NULL THEN 1 END`,
+				),
+			})
 			.from(chunksTable)
 			.where(eq(chunksTable.fileId, file.id));
 
-		const [withEmbeddingResult] = await this.db
-			.select({ withEmbedding: count() })
-			.from(chunksTable)
-			.where(
-				and(eq(chunksTable.fileId, file.id), isNotNull(chunksTable.embedding)),
-			);
-
-		const total = totalResult?.total ?? 0;
-		const withEmbedding = withEmbeddingResult?.withEmbedding ?? 0;
+		const total = chunkResult?.total ?? 0;
+		const withEmbedding = chunkResult?.withEmbedding ?? 0;
 		const hasStoredChunksWithEmbeddings = total > 0 && withEmbedding === total;
 
 		return {

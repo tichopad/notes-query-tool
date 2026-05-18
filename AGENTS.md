@@ -15,7 +15,7 @@ Run `pnpm run fix && pnpm run check` after changes to verify them.
 
 ## Test data dirs
 
-- Avoid reading testdata/ and dbdata/ directories' contents unless it's required to finish the task
+- Avoid reading testdata/ and dbdata/ directories' contents unless it's explicitly required to finish the task
 
 ## Version control
 
