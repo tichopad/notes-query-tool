@@ -1,5 +1,6 @@
 import path from "node:path";
 import { LINK_BOOST, LINK_BOOST_CAP, LINK_SOURCE_TOP_N } from "../config.ts";
+import { logger } from "../logger.ts";
 import type { QueryResult } from "./execute.ts";
 
 export type RawHit = {
@@ -26,6 +27,9 @@ export function fuseScores(
 	trigramResults: TrigramHit[],
 	weights: FuseWeights,
 ): Map<number, QueryResult> {
+	logger.trace(
+		`Fusing scores — vector: ${vectorResults.length}, fts: ${ftsResults.length}, trigram: ${trigramResults.length}`,
+	);
 	const maxSimilarity = Math.max(
 		...vectorResults.map((r) => r.similarity),
 		1e-9,
@@ -132,7 +136,9 @@ export function rerankByWikilinks(
 				if (fp === src.filePath) continue;
 				if (!filePathsInResults.has(fp)) continue;
 				const prev = boosts.get(fp) ?? 0;
-				boosts.set(fp, Math.min(prev + linkBoost * src.score, linkBoostCap));
+				const boost = Math.min(prev + linkBoost * src.score, linkBoostCap);
+				boosts.set(fp, boost);
+				logger.trace(`Boosting ${fp} by ${(boost - prev).toFixed(4)}`);
 			}
 		}
 	}

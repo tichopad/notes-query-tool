@@ -2,6 +2,7 @@ import { unlink, writeFile } from "node:fs/promises";
 import { defineCommand } from "citty";
 import { stringify as stringifyYaml } from "yaml";
 import { initEmbedder } from "../embedder.ts";
+import { logger } from "../logger.ts";
 import { executeQuery } from "../query/execute.ts";
 
 export const queryCommand = defineCommand({
@@ -48,7 +49,7 @@ export const queryCommand = defineCommand({
 		});
 
 		if (results.length === 0) {
-			console.log("No matching chunks found.");
+			logger.info("No matching chunks found.");
 			return;
 		}
 

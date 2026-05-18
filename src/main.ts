@@ -3,6 +3,7 @@ import { loadCommand } from "./commands/load.ts";
 import { queryCommand } from "./commands/query.ts";
 import { db } from "./database/client.ts";
 import { runMigrations } from "./database/migrate.ts";
+import { logger, setLogLevel } from "./logger.ts";
 
 // Setup DB and register subcommands
 const main = defineCommand({
@@ -11,6 +12,13 @@ const main = defineCommand({
 		version: "1.0.0",
 		description: "Notes query tool (think of a better description later)",
 	},
+	args: {
+		verbose: {
+			type: "boolean",
+			description: "Enable verbose logging (sets log level to max)",
+			default: false,
+		},
+	},
 	subCommands: {
 		// Handles loading notes, chunking and indexing them in the database
 		load: loadCommand,
@@ -18,7 +26,10 @@ const main = defineCommand({
 		query: queryCommand,
 	},
 	// Runs before any subcommand
-	async setup() {
+	async setup({ args }) {
+		if (args.verbose) {
+			setLogLevel(999); // consola: log everything
+		}
 		await db.$client.waitReady;
 		await runMigrations(db);
 	},
@@ -46,6 +57,6 @@ process.on("SIGINT", () => {
 });
 
 function closeDbAndExit(message: string, code: number) {
-	console.log(message);
+	logger.error(message);
 	db.$client.close().finally(() => process.exit(code));
 }

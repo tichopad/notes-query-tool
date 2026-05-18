@@ -11,6 +11,7 @@ import {
 import { db as defaultDb, type PgliteDatabase } from "../database/client.ts";
 import { chunksTable } from "../database/schema/chunks.ts";
 import { filesTable } from "../database/schema/files.ts";
+import { logger } from "../logger.ts";
 import { fuseScores, poolByFile, rerankByWikilinks } from "./scoring.ts";
 
 /** A single ranked chunk result returned by {@link executeQuery}. */
@@ -87,6 +88,10 @@ export async function executeQuery(
 
 	const queryVector = await embedQuery(vectorText);
 
+	logger.debug(
+		`Executing query — vector: "${vectorText}", fulltext: "${queryText}"`,
+	);
+
 	const similarity = sql<number>`1 - (${cosineDistance(chunksTable.embedding, queryVector)})`;
 
 	const trigramFn =
@@ -150,14 +155,22 @@ export async function executeQuery(
 		}),
 	]);
 
+	logger.debug(
+		`Vector: ${vectorResults.length} hits, FTS: ${ftsResults.length} hits, Trigram: ${trigramResults.length} hits`,
+	);
+
 	const allFiles = await db
 		.select({ filePath: filesTable.filePath })
 		.from(filesTable);
 
 	const fused = fuseScores(vectorResults, ftsResults, trigramResults, weights);
+	logger.debug(`After fusion: ${fused.size} unique chunks`);
 	const reranked = rerankByWikilinks(
 		fused,
 		allFiles.map((f) => f.filePath),
 	);
-	return poolByFile(reranked, topK);
+	logger.debug(`After wikilink rerank: ${reranked.size} chunks`);
+	const results = poolByFile(reranked, topK);
+	logger.debug(`Returning ${results.length} results`);
+	return results;
 }

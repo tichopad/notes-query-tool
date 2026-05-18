@@ -4,6 +4,7 @@ import { defineCommand } from "citty";
 import { type Embedder, initEmbedder } from "../embedder.ts";
 import { chunkMarkdown } from "../files/chunker.ts";
 import { loadFilesByGlob } from "../files/load-files.ts";
+import { logger } from "../logger.ts";
 import { DbLoadRepository } from "./load/load-repository.ts";
 import { type FileLoadResult, processLoadedFile } from "./load/process-file.ts";
 
@@ -21,6 +22,7 @@ export const loadCommand = defineCommand({
 	},
 	async run({ args }) {
 		const start = performance.now();
+		logger.debug("Starting load...");
 
 		let filesSeen = 0;
 		let filesSkipped = 0;
@@ -36,6 +38,7 @@ export const loadCommand = defineCommand({
 		): Promise<number[]> => {
 			if (!embedder) {
 				embedder = await initEmbedder();
+				logger.debug("Embedder initialised");
 			}
 			return embedder.embedDocument(body, title);
 		};
@@ -44,6 +47,7 @@ export const loadCommand = defineCommand({
 		const results: FileLoadResult[] = [];
 
 		for await (const filePath of loadFilesByGlob(args.glob)) {
+			logger.debug(`Processing file: ${filePath}`);
 			const result = await processLoadedFile(filePath, {
 				repo,
 				readText: (p) => readFile(p, "utf8"),
@@ -51,7 +55,6 @@ export const loadCommand = defineCommand({
 					createHash("sha256").update(content).digest("hex"),
 				chunkMarkdown,
 				embedDocument: getEmbedDocument,
-				log: console.log,
 			});
 			filePaths.push(filePath);
 			results.push(result);

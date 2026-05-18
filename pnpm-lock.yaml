@@ -22,6 +22,9 @@ importers:
       citty:
         specifier: 0.2.2
         version: 0.2.2
+      consola:
+        specifier: 3.4.2
+        version: 3.4.2
       drizzle-orm:
         specifier: 0.45.2
         version: 0.45.2(@electric-sql/pglite@0.4.4)
@@ -775,6 +778,10 @@ packages:
   citty@0.2.2:
     resolution: {integrity: sha512-+6vJA3L98yv+IdfKGZHBNiGW5KHn22e/JwID0Strsz8h4S/csAu/OuICwxrg44k5MRiZHWIo8XXuJgQTriRP4w==}
 
+  consola@3.4.2:
+    resolution: {integrity: sha512-5IKcdX0nnYavi6G7TtOhwkYzyjfJlatbjMjuLSfE2kYT5pMDOilZ4OvMhi637CcDICTmz3wARPoyhqyX1Y+XvA==}
+    engines: {node: ^14.18.0 || >=16.10.0}
+
   define-data-property@1.1.4:
     resolution: {integrity: sha512-rBMvIzlpA8v6E+SJZoo++HAYqsLrkg7MSfIinMPFhmkorw7X+dOXVJQs+QT69zGkzMyfDnIMN2Wid1+NbL3T+A==}
     engines: {node: '>= 0.4'}
@@ -1462,6 +1469,8 @@ snapshots:
   buffer-from@1.1.2: {}
 
   citty@0.2.2: {}
+
+  consola@3.4.2: {}
 
   define-data-property@1.1.4:
     dependencies:

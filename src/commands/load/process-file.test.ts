@@ -50,7 +50,6 @@ type MakeDepsOverrides = {
 	hashContent?: (content: string) => string;
 	chunkMarkdown?: (content: string, ...args: unknown[]) => Chunk[];
 	embedDocument?: (body: string, title?: string | null) => Promise<number[]>;
-	log?: (line: string) => void;
 	upsertFileId?: number;
 };
 
@@ -91,7 +90,6 @@ function makeDeps(overrides: MakeDepsOverrides = {}): TrackedDeps {
 			embedDocumentCalls.push({ body, title });
 			return embedDocument(body, title);
 		},
-		log: overrides.log ?? (() => {}),
 	};
 
 	return {

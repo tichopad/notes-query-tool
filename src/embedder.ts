@@ -3,6 +3,7 @@ import {
 	pipeline,
 } from "@huggingface/transformers";
 import { MODEL_DTYPE, MODEL_ID } from "./config.ts";
+import { logger } from "./logger.ts";
 
 /**
  * Loads the feature-extraction pipeline on the given device.
@@ -53,10 +54,12 @@ export async function initEmbedder(): Promise<Embedder> {
 
 	try {
 		embed = await createEmbedder("webgpu");
+		logger.debug("Embedder loaded on WebGPU");
 	} catch {
-		console.warn("WebGPU unavailable, using CPU.");
+		logger.warn("WebGPU unavailable, using CPU.");
 		device = "cpu";
 		embed = await createEmbedder("cpu");
+		logger.debug("Embedder loaded on CPU");
 	}
 
 	async function getEmbedding(text: string): Promise<number[]> {
@@ -71,11 +74,10 @@ export async function initEmbedder(): Promise<Embedder> {
 
 		// WebGPU produced NaN (GPU device lost). Fall back to CPU.
 		if (device === "webgpu") {
-			console.warn(
-				"WebGPU produced invalid embeddings, falling back to CPU...",
-			);
+			logger.warn("WebGPU produced invalid embeddings, falling back to CPU...");
 			device = "cpu";
 			embed = await createEmbedder("cpu");
+			logger.debug("Embedder loaded on CPU");
 			return getEmbedding(text);
 		}
 
