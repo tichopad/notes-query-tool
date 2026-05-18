@@ -20,8 +20,16 @@ export const queryCommand = defineCommand({
 		fulltext: {
 			type: "string",
 			alias: "f",
-			description: "Keyword query for full-text search",
+			description:
+				'Keyword query for full-text search (supports PostgreSQL websearch syntax: OR, -word, "phrases")',
 			required: true,
+		},
+		trigram: {
+			type: "string",
+			alias: "g",
+			description:
+				"Plain-text keyword for trigram search (defaults to --fulltext)",
+			required: false,
 		},
 		trigramMode: {
 			type: "string",
@@ -44,6 +52,7 @@ export const queryCommand = defineCommand({
 		const results = await executeQuery({
 			vectorText: args.vector,
 			queryText: args.fulltext,
+			trigramText: args.trigram,
 			embedQuery: embedder.embedQuery.bind(embedder),
 			trigramMode: mode,
 		});

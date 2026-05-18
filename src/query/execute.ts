@@ -38,6 +38,8 @@ export type ExecuteQueryOpts = {
 	vectorText: string;
 	/** Raw query string used for FTS and trigram search legs. */
 	queryText: string;
+	/** Plain-text query for trigram leg only; falls back to `queryText` when omitted. */
+	trigramText?: string;
 	/** Function that converts a string into a dense embedding vector. */
 	embedQuery: (text: string) => Promise<number[]>;
 	/** Database instance to query; defaults to the shared PGLite client. */
@@ -69,6 +71,7 @@ export async function executeQuery(
 	const {
 		vectorText,
 		queryText,
+		trigramText,
 		embedQuery,
 		db = defaultDb,
 		weights = {
@@ -88,6 +91,8 @@ export async function executeQuery(
 
 	const queryVector = await embedQuery(vectorText);
 
+	const effectiveTrigramText = trigramText ?? queryText;
+
 	logger.debug(
 		`Executing query — vector: "${vectorText}", fulltext: "${queryText}"`,
 	);
@@ -97,7 +102,7 @@ export async function executeQuery(
 	const trigramFn =
 		trigramMode === "strict" ? "strict_word_similarity" : "word_similarity";
 	const trigramOp = trigramMode === "strict" ? sql.raw("<<%") : sql.raw("<%");
-	const trigramScore = sql<number>`${sql.raw(trigramFn)}(${queryText}, ${chunksTable.content})`;
+	const trigramScore = sql<number>`${sql.raw(trigramFn)}(${effectiveTrigramText}, ${chunksTable.content})`;
 
 	const [vectorResults, ftsResults, trigramResults] = await Promise.all([
 		db
@@ -149,7 +154,7 @@ export async function executeQuery(
 				})
 				.from(chunksTable)
 				.innerJoin(filesTable, eq(chunksTable.fileId, filesTable.id))
-				.where(sql`${queryText} ${trigramOp} ${chunksTable.content}`)
+				.where(sql`${effectiveTrigramText} ${trigramOp} ${chunksTable.content}`)
 				.orderBy(desc(trigramScore))
 				.limit(limits.trigram);
 		}),
