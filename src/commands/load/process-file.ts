@@ -14,6 +14,7 @@ export type FileLoadResult = {
 
 export type ProcessFileDeps = {
 	repo: LoadRepository;
+	baseId: number;
 	readText(filePath: string): Promise<string>;
 	hashContent(content: string): string;
 	chunkMarkdown(content: string, ...args: unknown[]): Chunk[];
@@ -24,12 +25,13 @@ export async function processLoadedFile(
 	filePath: string,
 	deps: ProcessFileDeps,
 ): Promise<FileLoadResult> {
-	const { repo, readText, hashContent, chunkMarkdown, embedDocument } = deps;
+	const { repo, baseId, readText, hashContent, chunkMarkdown, embedDocument } =
+		deps;
 
 	const content = await readText(filePath);
 	const contentHash = hashContent(content);
 
-	const existingState = await repo.getFileProcessingState(filePath);
+	const existingState = await repo.getFileProcessingState(filePath, baseId);
 	const decision = decideFileProcessing(contentHash, existingState);
 	logger.debug(`[${filePath}] decision: ${decision.action}`);
 
@@ -56,6 +58,7 @@ export async function processLoadedFile(
 		contentHash,
 		null,
 		new Date(),
+		baseId,
 	);
 
 	const chunkDocs = await Promise.all(

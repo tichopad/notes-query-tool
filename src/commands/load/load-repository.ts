@@ -1,4 +1,4 @@
-import { count, eq, sql } from "drizzle-orm";
+import { and, count, eq, sql } from "drizzle-orm";
 import { db as defaultDb, type PgliteDatabase } from "../../database/client.ts";
 import { chunksTable, type NewChunk } from "../../database/schema/chunks.ts";
 import { filesTable } from "../../database/schema/files.ts";
@@ -10,12 +10,16 @@ export type FileProcessingState = {
 } | null;
 
 export interface LoadRepository {
-	getFileProcessingState(filePath: string): Promise<FileProcessingState>;
+	getFileProcessingState(
+		filePath: string,
+		baseId: number,
+	): Promise<FileProcessingState>;
 	upsertFile(
 		filePath: string,
 		contentHash: string,
 		title: string | null,
 		updatedAt: Date,
+		baseId: number,
 	): Promise<{ id: number }>;
 	replaceFileChunks(
 		fileId: number,
@@ -35,11 +39,16 @@ export class DbLoadRepository implements LoadRepository {
 		this.db = db;
 	}
 
-	async getFileProcessingState(filePath: string): Promise<FileProcessingState> {
+	async getFileProcessingState(
+		filePath: string,
+		baseId: number,
+	): Promise<FileProcessingState> {
 		const [file] = await this.db
 			.select({ id: filesTable.id, contentHash: filesTable.contentHash })
 			.from(filesTable)
-			.where(eq(filesTable.filePath, filePath))
+			.where(
+				and(eq(filesTable.filePath, filePath), eq(filesTable.baseId, baseId)),
+			)
 			.limit(1);
 
 		if (!file) {
@@ -72,6 +81,7 @@ export class DbLoadRepository implements LoadRepository {
 		contentHash: string,
 		title: string | null,
 		_updatedAt: Date,
+		baseId: number,
 	): Promise<{ id: number }> {
 		const attributes: Record<string, unknown> = {};
 		if (title !== null) {
@@ -80,9 +90,9 @@ export class DbLoadRepository implements LoadRepository {
 
 		const [file] = await this.db
 			.insert(filesTable)
-			.values({ filePath, contentHash, attributes })
+			.values({ filePath, contentHash, attributes, baseId })
 			.onConflictDoUpdate({
-				target: filesTable.filePath,
+				target: [filesTable.baseId, filesTable.filePath],
 				set: {
 					contentHash,
 					attributes,

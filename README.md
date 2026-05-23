@@ -14,6 +14,30 @@ An optional `--trigram` / `-g` flag passes a separate plain-text query to the tr
 
 An optional `--trigram-mode` / `-t` flag selects the trigram operator: `strict` (default, uses `strict_word_similarity`) or `word` (uses `word_similarity`).
 
+## Bases
+
+A **base** is a named, isolated collection of notes. All files loaded into the index belong to exactly one base, and queries are scoped to a single base — results from one base never appear in another.
+
+The default base is named `default`. Pass `--base <name>` to either command to use a different one. A base is created automatically on first load.
+
+```sh
+# Load notes into a named base
+pnpm run dev load --base work --glob "work-notes/**/*.md"
+pnpm run dev load --base personal --glob "personal/**/*.md"
+
+# Query within a specific base
+pnpm run dev query --base work -v "project deadlines" -f "deadline project"
+
+# Querying a base that doesn't exist exits with an error
+pnpm run dev query --base nonexistent -v "anything" -f "anything"
+
+# Drop a base and all its indexed data (prompts for confirmation)
+pnpm run dev drop --base work
+
+# Drop without confirmation (useful for scripting)
+pnpm run dev drop --base work --force
+```
+
 ## Search channels
 
 Three parallel channels run on every query and are fused by weighted score (vector 0.3 / FTS 0.4 / trigram 0.3):

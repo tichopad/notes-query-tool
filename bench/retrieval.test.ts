@@ -2,17 +2,22 @@ import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { count } from "drizzle-orm";
 import { db } from "../src/database/client.ts";
+import { basesTable } from "../src/database/schema/bases.ts";
 import { chunksTable } from "../src/database/schema/chunks.ts";
 import { type Embedder, initEmbedder } from "../src/embedder.ts";
 import { executeQuery, type QueryResult } from "../src/query/execute.ts";
 import { fixtures } from "./fixtures.ts";
 
 let embedder: Embedder;
+let defaultBaseId: number;
 
 before(async () => {
 	const [row] = await db.select({ count: count() }).from(chunksTable);
 	if (!row?.count) throw new Error("DB empty. Seed: pnpm run benchdata:load");
 	embedder = await initEmbedder();
+	const [base] = await db.select().from(basesTable).limit(1);
+	if (!base) throw new Error("No base found. Seed bench data first.");
+	defaultBaseId = base.id;
 });
 
 after(async () => {
@@ -69,6 +74,7 @@ for (const fx of fixtures) {
 			queryText: fx.ftsQuery,
 			embedQuery: embedder.embedQuery.bind(embedder),
 			topK: 10,
+			baseId: defaultBaseId,
 		});
 		const rank = firstRelevantRank(results, fx.expectedFiles);
 		const mrr = rank === Infinity ? 0 : 1 / rank;

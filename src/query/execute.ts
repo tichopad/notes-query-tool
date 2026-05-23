@@ -1,4 +1,4 @@
-import { cosineDistance, desc, eq, gt, sql } from "drizzle-orm";
+import { and, cosineDistance, desc, eq, gt, sql } from "drizzle-orm";
 import {
 	FTS_LIMIT,
 	FTS_WEIGHT,
@@ -44,6 +44,8 @@ export type ExecuteQueryOpts = {
 	embedQuery: (text: string) => Promise<number[]>;
 	/** Database instance to query; defaults to the shared PGLite client. */
 	db?: PgliteDatabase;
+	/** The base ID to scope all queries to. */
+	baseId: number;
 	/** Per-leg score weights used when fusing results. */
 	weights?: { vector: number; fts: number; trigram: number };
 	/** Maximum number of candidate rows fetched from each search leg. */
@@ -74,6 +76,7 @@ export async function executeQuery(
 		trigramText,
 		embedQuery,
 		db = defaultDb,
+		baseId,
 		weights = {
 			vector: VECTOR_WEIGHT,
 			fts: FTS_WEIGHT,
@@ -116,7 +119,7 @@ export async function executeQuery(
 			})
 			.from(chunksTable)
 			.innerJoin(filesTable, eq(chunksTable.fileId, filesTable.id))
-			.where(gt(similarity, 0))
+			.where(and(gt(similarity, 0), eq(filesTable.baseId, baseId)))
 			.orderBy(desc(similarity))
 			.limit(limits.vector),
 
@@ -132,7 +135,10 @@ export async function executeQuery(
 			.from(chunksTable)
 			.innerJoin(filesTable, eq(chunksTable.fileId, filesTable.id))
 			.where(
-				sql`${chunksTable.fts} @@ websearch_to_tsquery('simple', unaccent(${queryText}))`,
+				and(
+					sql`${chunksTable.fts} @@ websearch_to_tsquery('simple', unaccent(${queryText}))`,
+					eq(filesTable.baseId, baseId),
+				),
 			)
 			.orderBy(
 				desc(
@@ -154,7 +160,12 @@ export async function executeQuery(
 				})
 				.from(chunksTable)
 				.innerJoin(filesTable, eq(chunksTable.fileId, filesTable.id))
-				.where(sql`${effectiveTrigramText} ${trigramOp} ${chunksTable.content}`)
+				.where(
+					and(
+						sql`${effectiveTrigramText} ${trigramOp} ${chunksTable.content}`,
+						eq(filesTable.baseId, baseId),
+					),
+				)
 				.orderBy(desc(trigramScore))
 				.limit(limits.trigram);
 		}),
@@ -166,7 +177,8 @@ export async function executeQuery(
 
 	const allFiles = await db
 		.select({ filePath: filesTable.filePath })
-		.from(filesTable);
+		.from(filesTable)
+		.where(eq(filesTable.baseId, baseId));
 
 	const fused = fuseScores(vectorResults, ftsResults, trigramResults, weights);
 	logger.debug(`After fusion: ${fused.size} unique chunks`);

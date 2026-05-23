@@ -9,6 +9,7 @@ const FILE_PATH = "notes/test.md";
 const MATCHING_HASH = "abc123";
 const DIFFERENT_HASH = "def456";
 const NEW_FILE_ID = 42;
+const BASE_ID = 1;
 
 function makeChunk(text: string): Chunk {
 	return { text, breadcrumb: [], startOffset: 0, endOffset: text.length };
@@ -20,6 +21,7 @@ type UpsertFileCall = {
 	contentHash: string;
 	title: string | null;
 	updatedAt: Date;
+	baseId: number;
 };
 type ReplaceFileChunksCall = {
 	fileId: number;
@@ -66,8 +68,8 @@ function makeDeps(overrides: MakeDepsOverrides = {}): TrackedDeps {
 		async getFileProcessingState(): Promise<FileProcessingState> {
 			return state;
 		},
-		async upsertFile(filePath, contentHash, title, updatedAt) {
-			upsertFileCalls.push({ filePath, contentHash, title, updatedAt });
+		async upsertFile(filePath, contentHash, title, updatedAt, baseId) {
+			upsertFileCalls.push({ filePath, contentHash, title, updatedAt, baseId });
 			return { id: upsertFileId };
 		},
 		async replaceFileChunks(fileId, chunks) {
@@ -80,6 +82,7 @@ function makeDeps(overrides: MakeDepsOverrides = {}): TrackedDeps {
 
 	const deps: ProcessFileDeps = {
 		repo,
+		baseId: BASE_ID,
 		readText: overrides.readText ?? (async () => FAKE_CONTENT),
 		hashContent: overrides.hashContent ?? (() => MATCHING_HASH),
 		chunkMarkdown: (content, ...args) => {
@@ -139,6 +142,7 @@ Some content here.`;
 	assert.equal(upsertCall?.contentHash, MATCHING_HASH);
 	assert.equal(upsertCall?.title, null);
 	assert.ok(upsertCall?.updatedAt instanceof Date, "expected instanceof Date");
+	assert.equal(upsertCall?.baseId, BASE_ID);
 
 	// embedDocument called per chunk with bare chunk text + derived titleString
 	const header =

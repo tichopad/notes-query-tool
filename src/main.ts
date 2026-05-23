@@ -1,4 +1,5 @@
 import { defineCommand, runMain } from "citty";
+import { dropCommand } from "./commands/drop.ts";
 import { loadCommand } from "./commands/load.ts";
 import { queryCommand } from "./commands/query.ts";
 import { db } from "./database/client.ts";
@@ -18,12 +19,19 @@ const main = defineCommand({
 			description: "Enable verbose logging (sets log level to max)",
 			default: false,
 		},
+		base: {
+			type: "string",
+			description: "Knowledge base name to use",
+			default: "default",
+		},
 	},
 	subCommands: {
 		// Handles loading notes, chunking and indexing them in the database
 		load: loadCommand,
 		// Handles querying the indexed notes
 		query: queryCommand,
+		// Handles dropping a knowledge base and all its indexed data
+		drop: dropCommand,
 	},
 	// Runs before any subcommand
 	async setup({ args }) {

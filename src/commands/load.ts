@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { defineCommand } from "citty";
+import { DbBaseRepository } from "../database/base-repository.ts";
 import { type Embedder, initEmbedder } from "../embedder.ts";
 import { chunkMarkdown } from "../files/chunker.ts";
 import { loadFilesByGlob } from "../files/load-files.ts";
@@ -19,6 +20,11 @@ export const loadCommand = defineCommand({
 			description: "Files glob (e.g. 'notes/**/*.md')",
 			required: true,
 		},
+		base: {
+			type: "string",
+			description: "Knowledge base name to use",
+			default: "default",
+		},
 	},
 	async run({ args }) {
 		const start = performance.now();
@@ -30,6 +36,9 @@ export const loadCommand = defineCommand({
 		let chunksProduced = 0;
 
 		const repo = new DbLoadRepository();
+		const baseRepo = new DbBaseRepository();
+		const base = await baseRepo.getOrCreateBase(args.base);
+		logger.debug(`Using base: ${base.name} (id=${base.id})`);
 
 		let embedder: Embedder | null = null;
 		const getEmbedDocument = async (
@@ -50,6 +59,7 @@ export const loadCommand = defineCommand({
 			logger.debug(`Processing file: ${filePath}`);
 			const result = await processLoadedFile(filePath, {
 				repo,
+				baseId: base.id,
 				readText: (p) => readFile(p, "utf8"),
 				hashContent: (content) =>
 					createHash("sha256").update(content).digest("hex"),
