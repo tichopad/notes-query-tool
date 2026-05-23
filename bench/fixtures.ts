@@ -1,7 +1,5 @@
-// Seed DB before running bench:
-//   rm -rf dbdata/
-//   pnpm run db:migrate
-//   pnpm run benchdata:load
+// Seeding is handled automatically by the test setup in retrieval.test.ts.
+// No manual DB preparation required.
 
 export type Fixture = {
 	name: string;

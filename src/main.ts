@@ -2,7 +2,7 @@ import { defineCommand, runMain } from "citty";
 import { dropCommand } from "./commands/drop.ts";
 import { loadCommand } from "./commands/load.ts";
 import { queryCommand } from "./commands/query.ts";
-import { db } from "./database/client.ts";
+import { getDb } from "./database/client.ts";
 import { runMigrations } from "./database/migrate.ts";
 import { logger, setLogLevel } from "./logger.ts";
 
@@ -38,12 +38,13 @@ const main = defineCommand({
 		if (args.verbose) {
 			setLogLevel(999); // consola: log everything
 		}
+		const db = getDb();
 		await db.$client.waitReady;
 		await runMigrations(db);
 	},
 	// Runs after the subcommand finishes
 	async cleanup() {
-		await db.$client.close();
+		await getDb().$client.close();
 	},
 });
 
@@ -66,5 +67,7 @@ process.on("SIGINT", () => {
 
 function closeDbAndExit(message: string, code: number) {
 	logger.error(message);
-	db.$client.close().finally(() => process.exit(code));
+	getDb()
+		.$client.close()
+		.finally(() => process.exit(code));
 }

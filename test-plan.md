@@ -1,8 +1,0 @@
-- [x] Run `rm -rf dbdata && pnpm run dev load --base testbase testdata/test-file.md` and verify it completes without errors
-- [x] Run the load command a second time on the same file and verify it reports the file as skipped (unchanged)
-- [x] Run `pnpm run dev load --base anotherbase testdata/test-file.md` and verify files are scoped separately (two bases exist)
-- [x] Verify `pnpm run db:query "SELECT id, name FROM bases"` shows both `testbase` and `anotherbase` rows
-- [x] Verify `pnpm run db:query "SELECT file_path, base_id FROM files"` shows files linked to the correct base IDs
-- [ ] Run `pnpm run dev query --vector "test" --fulltext "test" --base nonexistent` and verify an explicit error message is shown (not a crash)
-- [ ] Run `pnpm run dev query --vector "test" --fulltext "test" --base testbase` and verify results are returned scoped to that base
-- [ ] Run the same query with `--base anotherbase` and verify results are isolated to that base only

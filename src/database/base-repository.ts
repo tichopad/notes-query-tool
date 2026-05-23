@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { db as defaultDb, type PgliteDatabase } from "./client.ts";
+import { getDb, type PgliteDatabase } from "./client.ts";
 import { type Base, basesTable } from "./schema/bases.ts";
 
 export interface BaseRepository {
@@ -11,8 +11,8 @@ export interface BaseRepository {
 export class DbBaseRepository implements BaseRepository {
 	private readonly db: PgliteDatabase;
 
-	constructor(db: PgliteDatabase = defaultDb) {
-		this.db = db;
+	constructor(db?: PgliteDatabase) {
+		this.db = db ?? getDb();
 	}
 
 	async getBaseByName(name: string): Promise<Base | undefined> {

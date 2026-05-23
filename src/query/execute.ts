@@ -8,7 +8,7 @@ import {
 	VECTOR_LIMIT,
 	VECTOR_WEIGHT,
 } from "../config.ts";
-import { db as defaultDb, type PgliteDatabase } from "../database/client.ts";
+import { getDb, type PgliteDatabase } from "../database/client.ts";
 import { chunksTable } from "../database/schema/chunks.ts";
 import { filesTable } from "../database/schema/files.ts";
 import { logger } from "../logger.ts";
@@ -75,7 +75,7 @@ export async function executeQuery(
 		queryText,
 		trigramText,
 		embedQuery,
-		db = defaultDb,
+		db = getDb(),
 		baseId,
 		weights = {
 			vector: VECTOR_WEIGHT,

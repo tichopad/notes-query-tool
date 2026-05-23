@@ -1,5 +1,5 @@
 import { and, count, eq, sql } from "drizzle-orm";
-import { db as defaultDb, type PgliteDatabase } from "../../database/client.ts";
+import { getDb, type PgliteDatabase } from "../../database/client.ts";
 import { chunksTable, type NewChunk } from "../../database/schema/chunks.ts";
 import { filesTable } from "../../database/schema/files.ts";
 
@@ -35,8 +35,8 @@ export interface LoadRepository {
 export class DbLoadRepository implements LoadRepository {
 	private readonly db: PgliteDatabase;
 
-	constructor(db: PgliteDatabase = defaultDb) {
-		this.db = db;
+	constructor(db?: PgliteDatabase) {
+		this.db = db ?? getDb();
 	}
 
 	async getFileProcessingState(

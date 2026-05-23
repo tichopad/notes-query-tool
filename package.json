@@ -18,7 +18,8 @@
 		"testdata:load": "pnpm run dev load --glob 'testdata/**/*.md'",
 		"testdata:reindex": "rm -rf dbdata && pnpm run testdata:load",
 		"dev": "node src/main.ts",
-		"test": "node --test --test-reporter=spec 'src/**/*.test.ts' 'bench/**/*.test.ts'",
+		"test": "node --test --test-reporter=spec 'src/**/*.test.ts'",
+		"bench": "node --test --test-reporter=spec 'bench/**/*.test.ts'",
 		"check": "biome check . && tsc --noEmit && pnpm run test",
 		"fix": "biome check --write ."
 	},
