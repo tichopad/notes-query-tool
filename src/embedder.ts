@@ -38,6 +38,7 @@ const DEFAULT_TITLE = "none";
 export interface Embedder {
 	embedQuery(text: string): Promise<number[]>;
 	embedDocument(body: string, title?: string | null): Promise<number[]>;
+	dispose(): Promise<void>;
 }
 
 /**
@@ -91,6 +92,9 @@ export async function initEmbedder(): Promise<Embedder> {
 		embedDocument(body: string, title?: string | null): Promise<number[]> {
 			const t = title?.trim() || DEFAULT_TITLE;
 			return getEmbedding(DOC_PREFIX_PREFIX + t + DOC_PREFIX_INFIX + body);
+		},
+		async dispose(): Promise<void> {
+			await embed.dispose();
 		},
 	};
 }

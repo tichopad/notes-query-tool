@@ -40,6 +40,7 @@ before(async () => {
 });
 
 after(async () => {
+	await embedder.dispose();
 	await testDb.$client.close();
 });
 
