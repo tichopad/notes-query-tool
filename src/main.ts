@@ -1,4 +1,5 @@
 import { defineCommand, runMain } from "citty";
+import packageJson from "../package.json" with { type: "json" };
 import { dropCommand } from "./commands/drop.ts";
 import { loadCommand } from "./commands/load.ts";
 import { queryCommand } from "./commands/query.ts";
@@ -10,8 +11,9 @@ import { logger, setLogLevel } from "./logger.ts";
 const main = defineCommand({
 	meta: {
 		name: "notes-query-tool",
-		version: "1.0.0",
-		description: "Notes query tool (think of a better description later)",
+		version: packageJson.version,
+		description: packageJson.description,
+		alias: "nqt",
 	},
 	args: {
 		verbose: {

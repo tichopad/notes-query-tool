@@ -8,12 +8,14 @@
 - [x] execute.ts imports client.ts on load, spawning a second PGlite connection to ./dbdata/. when the tests are running
 - [ ] General cleanup
 - [ ] Automatically handle stale lock files (e.g. from crashes) to avoid manual `rm -rf dbdata/` when that happens
-- [ ] Add user-facing loading state (e.g. model downloading, DB migrating, data indexing)
+- [ ] Add user-facing loading state (e.g. model downloading - especially this, but also DB migrating, data indexing)
 - [ ] Centralize caching to node_modules/.cache/notes-query-tool
 - [ ] Distribute on NPM
 - [ ] Improve indexing time
 - [ ] Allow remote embedding models
 - [ ] Ship agent skill
+- [ ] Do `pnpm audit` and fix any vulnerabilities
+- [ ] Remove the warning log when load or query runs
 - [ ] Add minimum vector threshold?
 - [ ] Check and handle relative/absolute paths more robustly (is CWD always where it's expected to be?)
 - [ ] User config file

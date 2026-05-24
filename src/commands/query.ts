@@ -1,6 +1,4 @@
-import { unlink, writeFile } from "node:fs/promises";
 import { defineCommand } from "citty";
-import { stringify as stringifyYaml } from "yaml";
 import { DbBaseRepository } from "../database/base-repository.ts";
 import { initEmbedder } from "../embedder.ts";
 import { logger } from "../logger.ts";
@@ -104,8 +102,5 @@ export const queryCommand = defineCommand({
 
 		// 	console.log(`${header} (score: ${Number(row.score).toFixed(3)})`);
 		// }
-
-		await unlink("query_results.yaml").catch(() => {});
-		await writeFile("query_results.yaml", stringifyYaml(results));
 	},
 });

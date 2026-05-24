@@ -1,3 +1,5 @@
+import { homedir } from "node:os";
+import { join } from "node:path";
 import type { DataType } from "@huggingface/transformers";
 
 // ---------------------------------------------------------------------------
@@ -22,8 +24,14 @@ export const EMBEDDING_DIMS: number = 768;
 // Database
 // ---------------------------------------------------------------------------
 
-/** PGLite data directory (relative to the process working directory). */
-export const DB_DATA_DIR: string = "./dbdata/";
+function getDataDir(): string {
+	const xdg = process.env.XDG_DATA_HOME;
+	const base = xdg && xdg.length > 0 ? xdg : join(homedir(), ".local", "share");
+	return `${join(base, "nqt")}/`;
+}
+
+/** PGLite data directory (XDG_DATA_HOME/nqt/ or ~/.local/share/nqt/). */
+export const DB_DATA_DIR: string = getDataDir();
 
 // ---------------------------------------------------------------------------
 // Chunking
