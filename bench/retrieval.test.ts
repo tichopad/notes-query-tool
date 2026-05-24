@@ -42,6 +42,9 @@ before(async () => {
 after(async () => {
 	await embedder.dispose();
 	await testDb.$client.close();
+	// Native handles from onnxruntime / PGlite can keep the event loop alive even
+	// after dispose/close. Force exit so CI doesn't hang after bench completes.
+	process.exit(0);
 });
 
 function firstRelevantRank(
