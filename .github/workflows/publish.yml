@@ -36,6 +36,9 @@ jobs:
       - name: Check
         run: pnpm run check
 
+      - name: Bench
+        run: pnpm run bench
+
   build-and-smoke-test:
     name: Build & Smoke Test
     needs: ci
