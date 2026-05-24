@@ -3,6 +3,7 @@
 	"type": "module",
 	"version": "0.1.0",
 	"description": "CLI tool for indexing and querying Markdown notes",
+	"license": "Unlicense",
 	"engines": {
 		"node": ">=24"
 	},
