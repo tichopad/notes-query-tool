@@ -28,7 +28,7 @@
 		"dev": "node src/main.ts",
 		"build": "node scripts/build.ts",
 		"test": "node --test --test-reporter=spec 'src/**/*.test.ts'",
-		"bench": "node --test --test-isolation=none --test-force-exit --test-reporter=spec 'bench/**/*.test.ts'",
+		"bench": "node bench/retrieval.ts",
 		"check": "biome check . && tsc --noEmit && pnpm run test",
 		"fix": "biome check --write ."
 	},
