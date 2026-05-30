@@ -31,7 +31,16 @@ before(async () => {
 });
 
 after(async () => {
-	await worker.terminate();
+	try {
+		await sendAndWait({ type: "cleanup" });
+	} catch {
+		// Ignore cleanup errors
+	}
+	await Promise.race([
+		worker.terminate(),
+		new Promise((resolve) => setTimeout(resolve, 5000)),
+	]);
+	process.exit(0);
 });
 
 function firstRelevantRank(
