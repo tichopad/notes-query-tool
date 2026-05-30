@@ -30,16 +30,11 @@ before(async () => {
 	await sendAndWait({ type: "setup" });
 });
 
-after(async () => {
-	try {
-		await sendAndWait({ type: "cleanup" });
-	} catch {
-		// Ignore cleanup errors
-	}
-	await Promise.race([
-		worker.terminate(),
-		new Promise((resolve) => setTimeout(resolve, 5000)),
-	]);
+after(() => {
+	// Skip graceful cleanup — the worker uses an in-memory DB so nothing to persist.
+	// Calling sendAndWait("cleanup") races with the worker's process.exit(0) and can
+	// leave the main process stuck on a promise that never resolves (CI-only hang).
+	worker.terminate();
 	process.exit(0);
 });
 

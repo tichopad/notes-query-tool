@@ -53,8 +53,7 @@ async function runQuery(fixture: {
 
 type WorkerMessage =
 	| { type: "setup" }
-	| { type: "query"; fixture: { vectorQuery: string; ftsQuery: string } }
-	| { type: "cleanup" };
+	| { type: "query"; fixture: { vectorQuery: string; ftsQuery: string } };
 
 if (parentPort) {
 	const port = parentPort;
@@ -65,15 +64,6 @@ if (parentPort) {
 		} else if (msg.type === "query" && msg.fixture) {
 			const results = await runQuery(msg.fixture);
 			port.postMessage({ type: "results", results });
-		} else if (msg.type === "cleanup") {
-			if (embedder) {
-				await embedder.dispose();
-			}
-			if (testDb) {
-				await testDb.$client.close();
-			}
-			port.postMessage({ type: "cleaned" });
-			process.exit(0);
 		}
 	});
 }
