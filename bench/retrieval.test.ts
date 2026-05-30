@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import path from "node:path";
-import { after, before, test } from "node:test";
+import { before, test } from "node:test";
 import { Worker } from "node:worker_threads";
 import type { QueryResult } from "../src/query/execute.ts";
 import { fixtures } from "./fixtures.ts";
@@ -28,14 +28,17 @@ function sendAndWait<T>(msg: Record<string, unknown>): Promise<T> {
 before(async () => {
 	worker = new Worker(path.resolve(import.meta.dirname, "retrieval.worker.ts"));
 	await sendAndWait({ type: "setup" });
-});
 
-after(() => {
-	// Skip graceful cleanup — the worker uses an in-memory DB so nothing to persist.
-	// Calling sendAndWait("cleanup") races with the worker's process.exit(0) and can
-	// leave the main process stuck on a promise that never resolves (CI-only hang).
-	worker.terminate();
-	process.exit(0);
+	// Safety net: force-exit the process after tests should be done.
+	// The Worker handle keeps the event loop alive, and under --test-isolation=none
+	// the test runner may never reach after() hooks or --test-force-exit's own exit.
+	// unref() ensures this timer won't *prevent* a natural exit, but since the Worker
+	// keeps the loop alive the timer WILL fire and force an exit.
+	// Tests complete quickly (~10s total) after setup, so 60s is very generous.
+	setTimeout(() => {
+		worker.terminate();
+		process.exit(0);
+	}, 60_000).unref();
 });
 
 function firstRelevantRank(
