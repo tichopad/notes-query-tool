@@ -40,10 +40,32 @@ before(async () => {
 });
 
 after(async () => {
-	await embedder.dispose();
-	await testDb.$client.close();
-	// Native handles from onnxruntime / PGlite can keep the event loop alive even
-	// after dispose/close. Force exit so CI doesn't hang after bench completes.
+	console.log("[bench] after: start");
+	try {
+		console.log("[bench] after: disposing embedder");
+		await Promise.race([
+			embedder.dispose(),
+			new Promise((_, reject) =>
+				setTimeout(() => reject(new Error("embedder.dispose timeout")), 5000),
+			),
+		]);
+		console.log("[bench] after: embedder disposed");
+	} catch (e) {
+		console.log("[bench] after: embedder dispose error", e);
+	}
+	try {
+		console.log("[bench] after: closing db");
+		await Promise.race([
+			testDb.$client.close(),
+			new Promise((_, reject) =>
+				setTimeout(() => reject(new Error("db.close timeout")), 5000),
+			),
+		]);
+		console.log("[bench] after: db closed");
+	} catch (e) {
+		console.log("[bench] after: db close error", e);
+	}
+	console.log("[bench] after: exiting");
 	process.exit(0);
 });
 
