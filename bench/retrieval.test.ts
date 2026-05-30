@@ -1,72 +1,37 @@
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { after, before, test } from "node:test";
-import { DbLoadRepository } from "../src/commands/load/load-repository.ts";
-import { processLoadedFile } from "../src/commands/load/process-file.ts";
-import { DbBaseRepository } from "../src/database/base-repository.ts";
-import { createDbClient, type DbClient } from "../src/database/client.ts";
-import { runMigrations } from "../src/database/migrate.ts";
-import { type Embedder, initEmbedder } from "../src/embedder.ts";
-import { chunkMarkdown } from "../src/files/chunker.ts";
-import { loadFilesByGlob } from "../src/files/load-files.ts";
-import { executeQuery, type QueryResult } from "../src/query/execute.ts";
+import { Worker } from "node:worker_threads";
+import type { QueryResult } from "../src/query/execute.ts";
 import { fixtures } from "./fixtures.ts";
 
-let embedder: Embedder;
-let defaultBaseId: number;
-let testDb: DbClient;
+let worker: Worker;
+
+function sendAndWait<T>(msg: Record<string, unknown>): Promise<T> {
+	return new Promise((resolve, reject) => {
+		const onMessage = (data: unknown) => {
+			worker.off("message", onMessage);
+			worker.off("error", onError);
+			resolve(data as T);
+		};
+		const onError = (err: Error) => {
+			worker.off("message", onMessage);
+			worker.off("error", onError);
+			reject(err);
+		};
+		worker.on("message", onMessage);
+		worker.on("error", onError);
+		worker.postMessage(msg);
+	});
+}
 
 before(async () => {
-	testDb = createDbClient("memory://");
-	await runMigrations(testDb);
-	const base = await new DbBaseRepository(testDb).getOrCreateBase("default");
-	embedder = await initEmbedder();
-	const repo = new DbLoadRepository(testDb);
-	for await (const filePath of loadFilesByGlob("benchdata/**/*.md")) {
-		const relPath = path.relative(process.cwd(), filePath);
-		await processLoadedFile(relPath, {
-			repo,
-			baseId: base.id,
-			readText: (p) => readFile(p, "utf8"),
-			hashContent: (content) =>
-				createHash("sha256").update(content).digest("hex"),
-			chunkMarkdown,
-			embedDocument: embedder.embedDocument.bind(embedder),
-		});
-	}
-	defaultBaseId = base.id;
+	worker = new Worker(path.resolve(import.meta.dirname, "retrieval.worker.ts"));
+	await sendAndWait({ type: "setup" });
 });
 
 after(async () => {
-	console.log("[bench] after: start");
-	try {
-		console.log("[bench] after: disposing embedder");
-		await Promise.race([
-			embedder.dispose(),
-			new Promise((_, reject) =>
-				setTimeout(() => reject(new Error("embedder.dispose timeout")), 5000),
-			),
-		]);
-		console.log("[bench] after: embedder disposed");
-	} catch (e) {
-		console.log("[bench] after: embedder dispose error", e);
-	}
-	try {
-		console.log("[bench] after: closing db");
-		await Promise.race([
-			testDb.$client.close(),
-			new Promise((_, reject) =>
-				setTimeout(() => reject(new Error("db.close timeout")), 5000),
-			),
-		]);
-		console.log("[bench] after: db closed");
-	} catch (e) {
-		console.log("[bench] after: db close error", e);
-	}
-	console.log("[bench] after: exiting");
-	process.exit(0);
+	await worker.terminate();
 });
 
 function firstRelevantRank(
@@ -114,13 +79,9 @@ function logTable(
 
 for (const fx of fixtures) {
 	test(`retrieval: ${fx.name}`, async () => {
-		const results = await executeQuery({
-			vectorText: fx.vectorQuery,
-			queryText: fx.ftsQuery,
-			embedQuery: embedder.embedQuery.bind(embedder),
-			db: testDb,
-			topK: 10,
-			baseId: defaultBaseId,
+		const { results } = await sendAndWait<{ results: QueryResult[] }>({
+			type: "query",
+			fixture: { vectorQuery: fx.vectorQuery, ftsQuery: fx.ftsQuery },
 		});
 		const rank = firstRelevantRank(results, fx.expectedFiles);
 		const mrr = rank === Infinity ? 0 : 1 / rank;
