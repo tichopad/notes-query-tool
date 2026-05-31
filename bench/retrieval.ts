@@ -121,15 +121,15 @@ async function main() {
 	// Dispose ONNX sessions and close DB before exiting.
 	// Without this, process.exit() triggers ONNX Runtime's global destructors
 	// which throw because the logging manager is already torn down (SIGABRT / exit 134).
-	// Add timeout to prevent CI hangs if cleanup stalls.
-	const cleanupTimeout = setTimeout(() => {
-		console.error("Cleanup timed out after 10s, forcing exit");
+	// Force exit after 10s if cleanup stalls (e.g., ONNX CPU backend hangs in CI).
+	const forceExit = setTimeout(() => {
+		console.error("Cleanup timed out, forcing exit");
 		process.exit(exitCode);
 	}, 10_000);
-	cleanupTimeout.unref();
 
 	await embedder.dispose();
 	await testDb.$client.close();
+	clearTimeout(forceExit);
 
 	process.exit(exitCode);
 }
