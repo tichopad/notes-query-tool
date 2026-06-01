@@ -14,6 +14,35 @@ async function createEmbedder(device: "webgpu" | "cpu") {
 	return await pipeline("feature-extraction", MODEL_ID, {
 		device,
 		dtype: MODEL_DTYPE,
+		progress_callback: (event: {
+			status: string;
+			name?: string;
+			file?: string;
+			progress?: number;
+			model?: string;
+		}) => {
+			const nameOrFile =
+				event.file || event.model || event.name || "model files";
+			if (!process.stderr.isTTY) {
+				if (event.status === "init") {
+					logger.info(`Starting download: ${nameOrFile}`);
+				} else if (event.status === "done") {
+					logger.info(`Finished download: ${nameOrFile}`);
+				} else if (event.status === "ready") {
+					logger.info(`Model ready: ${nameOrFile}`);
+				}
+				return;
+			}
+
+			if (event.status === "progress") {
+				const pct = Math.round(event.progress || 0);
+				process.stderr.write(`\x1b[2K\rDownloading ${nameOrFile}: ${pct}%`);
+			} else if (event.status === "done") {
+				process.stderr.write(`\x1b[2K\rDownloaded ${nameOrFile}\n`);
+			} else if (event.status === "ready") {
+				process.stderr.write(`\x1b[2K\rModel ready\n`);
+			}
+		},
 	});
 }
 
