@@ -4,6 +4,9 @@
 	"version": "0.1.2",
 	"description": "CLI tool for indexing and querying Markdown notes",
 	"license": "Unlicense",
+	"repository": {
+		"url": "https://github.com/tichopad/notes-query-tool"
+	},
 	"engines": {
 		"node": ">=24"
 	},
