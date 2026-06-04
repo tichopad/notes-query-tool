@@ -1,0 +1,15 @@
+onlyBuiltDependencies:
+  - esbuild
+  - onnxruntime-node
+  - protobufjs
+  - sharp
+patchedDependencies:
+  drizzle-kit@0.31.10: patches/drizzle-kit@0.31.10.patch
+overrides:
+  semver: 7.8.1
+  esbuild: 0.28.0
+allowBuilds:
+  esbuild: true
+  onnxruntime-node: true
+  protobufjs: true
+  sharp: true
