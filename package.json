@@ -33,20 +33,21 @@
 		"fix": "biome check --write ."
 	},
 	"dependencies": {
-		"@electric-sql/pglite": "0.4.4",
-		"@huggingface/transformers": "4.1.0",
+		"@electric-sql/pglite": "0.5.1",
+		"@electric-sql/pglite-pgvector": "0.0.2",
+		"@huggingface/transformers": "4.2.0",
 		"citty": "0.2.2",
 		"consola": "3.4.2",
 		"drizzle-orm": "0.45.2",
-		"marked": "18.0.1",
-		"yaml": "2.8.3"
+		"marked": "18.0.5",
+		"yaml": "2.9.0"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.4.12",
-		"@types/node": "24.12.2",
+		"@biomejs/biome": "2.4.16",
+		"@types/node": "24.13.0",
 		"drizzle-kit": "0.31.10",
 		"esbuild": "0.28.0",
-		"typescript": "6.0.2"
+		"typescript": "6.0.3"
 	},
 	"pnpm": {
 		"onlyBuiltDependencies": [

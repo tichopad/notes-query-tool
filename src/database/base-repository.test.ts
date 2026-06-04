@@ -3,7 +3,7 @@ import { after, before, describe, test } from "node:test";
 import { PGlite } from "@electric-sql/pglite";
 import { pg_trgm } from "@electric-sql/pglite/contrib/pg_trgm";
 import { unaccent } from "@electric-sql/pglite/contrib/unaccent";
-import { vector } from "@electric-sql/pglite/vector";
+import { vector } from "@electric-sql/pglite-pgvector";
 import { drizzle } from "drizzle-orm/pglite";
 import { DbBaseRepository } from "./base-repository.ts";
 import { runMigrations } from "./migrate.ts";
