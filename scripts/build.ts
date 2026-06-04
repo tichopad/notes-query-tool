@@ -21,7 +21,6 @@ await build({
 	target: "node24",
 	format: "esm",
 	outfile: "dist/main.js",
-	minify: true,
 	sourcemap: true,
 	sourcesContent: false,
 	treeShaking: true,
