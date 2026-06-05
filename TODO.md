@@ -7,7 +7,7 @@
 - [x] Use in-memory PGLite for tests (reproducible, faster, no cleanup needed)
 - [x] execute.ts imports client.ts on load, spawning a second PGlite connection to ./dbdata/. when the tests are running
 - [ ] General cleanup
-- [ ] Automatically handle stale lock files (e.g. from crashes) to avoid manual `rm -rf dbdata/` when that happens
+- [ ] Automatically handle stale lock files (e.g. from crashes) to avoid manual `rm -rf dbdata/` when that happens (**this might actually be a bigger issue than I thought**)
 - [ ] Add user-facing loading state (e.g. model downloading - especially this, but also DB migrating, data indexing)
 - [ ] Centralize caching to node_modules/.cache/notes-query-tool
 - [ ] Distribute on NPM
